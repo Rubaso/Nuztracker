@@ -77,9 +77,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {/* NAVEGACIÓN Y SESIÓN DE JUGADOR */}
             <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3">
               <nav className="flex gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
-                {renderNavLink('/timeline', 'Timeline')}
-                {renderNavLink('/box', 'BOX / Estado')}
-                {renderNavLink('/summary', 'Summary / VS')}
+                {renderNavLink('/timeline', 'Capturas')}
+                {renderNavLink('/box', 'Nuestro PC')}
+                {renderNavLink('/summary', 'TORNEO')}
               </nav>
 
               {/* BADGE DEL PERFIL A LA DERECHA */}

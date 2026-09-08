@@ -177,7 +177,7 @@ function BoxContent() {
         </div>
 
         <h2 className="text-base font-black tracking-widest uppercase text-slate-300">
-          Box de {jugadorActivo?.name}
+          Caja de {jugadorActivo?.name}
         </h2>
       </div>
 
@@ -244,7 +244,7 @@ function BoxContent() {
         <div className="lg:col-span-7 space-y-10">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-xs font-black tracking-widest uppercase text-sky-400">BOX</h3>
+              <h3 className="text-xs font-black tracking-widest uppercase text-sky-400">CAJA</h3>
               {!canEditCurrentBox && (
                 <span className="text-[11px] font-semibold text-slate-500 bg-slate-900 px-2.5 py-1 rounded-lg border border-slate-800">
                   🔒 Modo Lectura
@@ -363,7 +363,7 @@ function BoxContent() {
 
           {/* CEMENTERIO */}
           <div className="space-y-4">
-            <h3 className="text-xs font-black tracking-widest uppercase text-rose-500">GRAVE (Muertos)</h3>
+            <h3 className="text-xs font-black tracking-widest uppercase text-rose-500">MUELTOS</h3>
             {gravePokemon.length === 0 ? (
               <p className="text-sm font-medium text-slate-500">Ninguno</p>
             ) : (
