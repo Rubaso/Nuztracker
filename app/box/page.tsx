@@ -98,7 +98,7 @@ function BoxContent() {
 
     if (!isCurrentlyTeam) {
       const equipoActualCount = capturas.filter(
-        c => c.jugador_id === pkmn.jugador_id && c.is_team && c.estado !== 'MUERTO'
+        c => c.jugador_id === pkmn.jugador_id && c.is_team && c.estado !== 'MUERTO' && c.estado !== 'INTERCAMBIADO'
       ).length
 
       if (equipoActualCount >= 6) {
@@ -122,7 +122,8 @@ function BoxContent() {
 
   const capturasJugador = capturas.filter(c => c.jugador_id === selectedJugadorId)
 
-  const boxPokemon = capturasJugador.filter(c => c.estado !== 'MUERTO' && c.estado !== 'ESCAPADO')
+  // Se excluye INTERCAMBIADO para que no aparezca en la Caja
+  const boxPokemon = capturasJugador.filter(c => c.estado !== 'MUERTO' && c.estado !== 'ESCAPADO' && c.estado !== 'INTERCAMBIADO')
   const gravePokemon = capturasJugador.filter(c => c.estado === 'MUERTO')
 
   const jugadorActivo = JUGADORES.find(j => j.id === selectedJugadorId)
@@ -192,7 +193,7 @@ function BoxContent() {
               const isMyPlayer = loggedPlayer?.id === j.id
               
               const pokemonEstrella = capturas.filter(
-                (c) => c.jugador_id === j.id && c.estado !== 'MUERTO' && c.is_team
+                (c) => c.jugador_id === j.id && c.estado !== 'MUERTO' && c.estado !== 'ESCAPADO' && c.estado !== 'INTERCAMBIADO' && c.is_team
               ).slice(0, 6)
 
               const accentColor = ACCENT_COLORS[idx % ACCENT_COLORS.length]
