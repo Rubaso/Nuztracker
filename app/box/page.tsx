@@ -122,7 +122,7 @@ function BoxContent() {
 
   const capturasJugador = capturas.filter(c => c.jugador_id === selectedJugadorId)
 
-  const boxPokemon = capturasJugador.filter(c => c.estado !== 'MUERTO')
+  const boxPokemon = capturasJugador.filter(c => c.estado !== 'MUERTO' && c.estado !== 'ESCAPADO')
   const gravePokemon = capturasJugador.filter(c => c.estado === 'MUERTO')
 
   const jugadorActivo = JUGADORES.find(j => j.id === selectedJugadorId)
