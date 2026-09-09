@@ -218,7 +218,7 @@ function BoxContent() {
                     )}
                   </div>
 
-                  <div className="flex items-center -space-x-3 overflow-hidden py-1 min-h-[56px]">
+                  <div className="flex items-center -space-x-2 overflow-hidden py-1 min-h-[60px]">
                     {pokemonEstrella.map((pkmn) => {
                       const id = pkmn.is_evolved && pkmn.evolved_id ? pkmn.evolved_id : pkmn.pokemon_id
                       const url = getSpriteUrl(id, pkmn.is_shiny)
@@ -229,7 +229,7 @@ function BoxContent() {
                           key={pkmn.id}
                           src={url}
                           alt={pkmn.pokemon_name}
-                          className="w-14 h-14 object-contain shrink-0 drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)]"
+                          className="w-16 h-16 object-contain shrink-0 drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] hover:scale-110 transition-transform"
                         />
                       )
                     })}
@@ -263,7 +263,7 @@ function BoxContent() {
                   return (
                     <div 
                       key={c.id}
-                      className={`flex flex-col items-center bg-[#0d1322] border p-4 rounded-2xl min-w-[200px] relative transition-all shadow-xl ${
+                      className={`flex flex-col items-center bg-[#0d1322] border p-4 rounded-2xl min-w-[220px] relative transition-all shadow-xl ${
                         c.is_team
                           ? 'border-yellow-500/60 ring-1 ring-yellow-500/30'
                           : c.is_evolved 
@@ -283,7 +283,7 @@ function BoxContent() {
                             ? 'Quitar del equipo'
                             : 'Añadir al equipo (máx 6)'
                         }
-                        className={`absolute top-3 left-3 text-base transition-transform active:scale-125 ${
+                        className={`absolute top-3 left-3 text-base transition-transform active:scale-125 z-10 ${
                           canEditCurrentBox ? 'cursor-pointer' : 'cursor-default opacity-20'
                         } ${
                           c.is_team
@@ -295,7 +295,7 @@ function BoxContent() {
                       </button>
 
                       {c.is_shiny && (
-                        <span className="absolute top-3 left-9 text-sm" title="Shiny">✨</span>
+                        <span className="absolute top-3 left-9 text-sm z-10" title="Shiny">✨</span>
                       )}
 
                       {/* Botón de Evolución */}
@@ -306,7 +306,7 @@ function BoxContent() {
                             setSelectedEvolvePkmn(c)
                             setEvolveModalOpen(true)
                           }}
-                          className={`absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer ${
+                          className={`absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer z-10 ${
                             c.is_evolved 
                               ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30' 
                               : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-amber-400 hover:border-amber-400/50'
@@ -319,7 +319,7 @@ function BoxContent() {
                       {c.is_evolved && c.evolved_name ? (
                         <div className="flex items-center justify-center gap-3 mt-7 mb-2">
                           <div className="flex flex-col items-center opacity-50 hover:opacity-100 transition-opacity">
-                            <img src={baseSpriteUrl} alt={c.pokemon_name} className="w-10 h-10 object-contain" />
+                            <img src={baseSpriteUrl} alt={c.pokemon_name} className="w-12 h-12 object-contain" />
                             <span className="text-[10px] font-semibold text-slate-400 capitalize">{c.pokemon_name}</span>
                           </div>
 
@@ -327,11 +327,12 @@ function BoxContent() {
                             <span className="text-amber-400 font-black text-base animate-pulse">➔</span>
                           </div>
 
-                          <div className="flex flex-col items-center bg-amber-500/10 p-2 rounded-xl border border-amber-500/20">
-                            <img src={evolvedSpriteUrl!} alt={c.evolved_name} className="w-16 h-16 object-contain drop-shadow-md" />
+                          <div className="flex flex-col items-center bg-amber-500/10 p-2.5 rounded-xl border border-amber-500/20">
+                            {/* Sprite Evolucionado ampliado a w-24 h-24 */}
+                            <img src={evolvedSpriteUrl!} alt={c.evolved_name} className="w-24 h-24 object-contain drop-shadow-md" />
                             <span className="text-xs font-bold text-amber-300 capitalize mt-1">{c.evolved_name}</span>
                             {c.evolved_habilidad && (
-                              <span className="text-[10px] text-amber-200 font-semibold bg-amber-950/90 px-2 py-0.5 rounded-md border border-amber-800/60 mt-1 truncate max-w-[100px]">
+                              <span className="text-[10px] text-amber-200 font-semibold bg-amber-950/90 px-2 py-0.5 rounded-md border border-amber-800/60 mt-1 truncate max-w-[120px]">
                                 {c.evolved_habilidad}
                               </span>
                             )}
@@ -339,19 +340,20 @@ function BoxContent() {
                         </div>
                       ) : (
                         <div className="flex flex-col items-center mt-6">
-                          <img src={baseSpriteUrl} alt={c.pokemon_name} className="w-20 h-20 object-contain" />
-                          <span className="text-sm font-bold text-slate-200 capitalize mt-1">
+                          {/* Sprite Base ampliado a w-28 h-28 */}
+                          <img src={baseSpriteUrl} alt={c.pokemon_name} className="w-28 h-28 object-contain drop-shadow-lg" />
+                          <span className="text-base font-bold text-slate-200 capitalize mt-1">
                             {c.pokemon_name}
                           </span>
                           {c.habilidad && (
-                            <span className="text-[10px] text-sky-400 font-semibold bg-sky-950/60 px-2 py-0.5 rounded-md border border-sky-800/40 mt-1.5 truncate max-w-[120px]">
+                            <span className="text-xs text-sky-400 font-semibold bg-sky-950/60 px-2.5 py-0.5 rounded-md border border-sky-800/40 mt-1.5 truncate max-w-[140px]">
                               {c.habilidad}
                             </span>
                           )}
                         </div>
                       )}
 
-                      <span className="text-[11px] text-slate-500 font-medium truncate max-w-[120px] mt-3 border-t border-slate-800/60 pt-1.5 w-full text-center">
+                      <span className="text-[11px] text-slate-500 font-medium truncate max-w-[140px] mt-3 border-t border-slate-800/60 pt-1.5 w-full text-center">
                         {c.ruta}
                       </span>
                     </div>
@@ -374,9 +376,10 @@ function BoxContent() {
                   const spriteUrl = getSpriteUrl(pkmnId, c.is_shiny)
 
                   return (
-                    <div key={c.id} className="flex flex-col items-center bg-slate-900/40 border border-slate-800/80 p-3 rounded-2xl min-w-[120px] relative">
-                      <img src={spriteUrl} alt={pkmnName} className="w-16 h-16 object-contain grayscale opacity-40" />
-                      <span className="text-rose-500 font-black text-3xl absolute top-3">✕</span>
+                    <div key={c.id} className="flex flex-col items-center bg-slate-900/40 border border-slate-800/80 p-3 rounded-2xl min-w-[130px] relative">
+                      {/* Sprite de cementerio ampliado a w-20 h-20 */}
+                      <img src={spriteUrl} alt={pkmnName} className="w-20 h-20 object-contain grayscale opacity-40" />
+                      <span className="text-rose-500 font-black text-4xl absolute top-4">✕</span>
                       <span className="text-xs font-bold text-slate-400 capitalize mt-1">{pkmnName}</span>
                     </div>
                   )

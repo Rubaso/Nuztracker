@@ -8,6 +8,7 @@ import PokemonSelectModal from '@/components/PokemonSelectModal'
 function TimelineContent() {
   const [loggedPlayer, setLoggedPlayer] = useState<{ id: number; name: string } | null>(null)
   const [capturas, setCapturas] = useState<any[]>([])
+  const [liveMap, setLiveMap] = useState<Record<number, boolean>>({})
   const [search, setSearch] = useState('')
 
   // Modales
@@ -47,10 +48,21 @@ function TimelineContent() {
     if (data) setCapturas(data)
   }
 
+  const fetchDirectos = async () => {
+    const { data } = await supabase.from('directos').select('*')
+    if (data) {
+      const map: Record<number, boolean> = {}
+      data.forEach((d: any) => { map[d.jugador_id] = d.is_live })
+      setLiveMap(map)
+    }
+  }
+
   useEffect(() => {
     fetchCapturas()
+    fetchDirectos()
 
-    const channel = supabase.channel('realtime_timeline')
+    // Realtime capturas
+    const channelCapturas = supabase.channel('realtime_timeline')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'capturas' }, (payload) => {
         if (payload.eventType === 'INSERT') {
           const newRow = payload.new
@@ -70,10 +82,22 @@ function TimelineContent() {
       })
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    // Realtime directos
+    const channelDirectos = supabase.channel('realtime_directos_timeline')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'directos' }, (payload: any) => {
+        const updated = payload.new
+        if (updated) {
+          setLiveMap(prev => ({ ...prev, [updated.jugador_id]: updated.is_live }))
+        }
+      })
+      .subscribe()
+
+    return () => { 
+      supabase.removeChannel(channelCapturas)
+      supabase.removeChannel(channelDirectos)
+    }
   }, [])
 
-  // Añadir un NUEVO Pokémon con estado VIVO por defecto
   const addEntry = async (
     jugadorId: number, 
     ruta: string, 
@@ -105,7 +129,6 @@ function TimelineContent() {
     }
   }
 
-  // Actualizar un Pokémon existente
   const updatePokemonStatus = async (
     id: number,
     estado: string,
@@ -123,7 +146,6 @@ function TimelineContent() {
     await supabase.from('capturas').update(payload).eq('id', id)
   }
 
-  // Borrar un Pokémon
   const deleteEntry = async (id: number) => {
     setCapturas(prev => prev.filter(c => c.id !== id))
     setActionMenuOpen(false)
@@ -183,7 +205,7 @@ function TimelineContent() {
   const rutasFiltradas = RUTAS_ANIL.filter(r => r.toLowerCase().includes(search.toLowerCase()))
 
   return (
-    <div className="space-y-8 max-w-[95vw] mx-auto px-4 py-8">
+    <div className="space-y-6 w-full px-2 py-4">
       {/* Modal de Selección de Pokémon */}
       {selectedCell && canEditCell(selectedCell.jugadorId) && (
         <PokemonSelectModal
@@ -217,12 +239,12 @@ function TimelineContent() {
               </button>
             </div>
 
-            <div className="flex flex-col items-center justify-center bg-slate-900/50 rounded-xl p-3 border border-slate-800">
+            <div className="flex flex-col items-center justify-center bg-slate-900/50 rounded-xl p-3 border border-slate-800 overflow-hidden">
               {activePokemon.pokemonId && (
                 <img
                   src={getSpriteUrl(activePokemon.pokemonId, isShinyInput) || ''}
                   alt={activePokemon.pokemonName}
-                  className="w-20 h-20 object-contain drop-shadow-md"
+                  className="w-32 h-32 object-contain drop-shadow-md scale-125"
                 />
               )}
             </div>
@@ -301,17 +323,34 @@ function TimelineContent() {
 
       {/* Tabla Timeline */}
       <div className="overflow-x-auto rounded-2xl border border-white/10 bg-[#0b0f17]/90 backdrop-blur-sm shadow-2xl">
-        <table className="w-full text-left border-collapse min-w-[1000px]">
+        <table className="w-full text-left border-collapse min-w-[1300px]">
           <thead>
             <tr className="text-xs font-bold tracking-widest uppercase text-zinc-400 border-b border-white/10 bg-black/40">
-              <th className="py-4 px-6 w-64 text-sm">Tramo</th>
+              <th className="py-4 px-6 w-56 text-sm">Tramo</th>
               {JUGADORES.map(j => {
                 const isMyColumn = loggedPlayer?.id === j.id
+                const isLive = liveMap[j.id] || false
+
                 return (
                   <th key={j.id} className={`py-4 px-4 text-center text-sm ${isMyColumn ? 'text-amber-400 font-extrabold bg-amber-500/5' : ''}`}>
-                    <div className="flex items-center justify-center gap-1">
-                      <span>{j.name}</span>
-                      {isMyColumn && <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 rounded">TÚ</span>}
+                    <div className="flex flex-col items-center justify-center gap-1">
+                      <div className="flex items-center gap-1.5">
+                        <span>{j.name}</span>
+                        {isMyColumn && <span className="text-[9px] bg-amber-500/20 text-amber-300 border border-amber-500/40 px-1 rounded">TÚ</span>}
+                      </div>
+
+                      {/* Insignia EN VIVO si el jugador transmite */}
+                      {isLive && (
+                        <a
+                          href={(j as any).twitchUrl || '#'}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-0.5 flex items-center gap-1 bg-rose-600 text-white text-[9px] font-black px-2 py-0.5 rounded-full shadow-[0_0_8px_rgba(225,29,72,0.6)] hover:scale-105 transition-all"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span>
+                          <span>EN VIVO</span>
+                        </a>
+                      )}
                     </div>
                   </th>
                 )
@@ -321,7 +360,7 @@ function TimelineContent() {
           <tbody className="divide-y divide-white/[0.05] text-sm">
             {rutasFiltradas.map(ruta => (
               <tr key={ruta} className="hover:bg-white/[0.02] transition-colors">
-                <td className="py-4 px-6 font-semibold text-zinc-200 whitespace-nowrap text-sm align-top">{ruta}</td>
+                <td className="py-5 px-6 font-semibold text-zinc-200 whitespace-nowrap text-sm align-top">{ruta}</td>
 
                 {JUGADORES.map(j => {
                   const canEditThisCell = canEditCell(j.id)
@@ -334,32 +373,33 @@ function TimelineContent() {
                         {playerCapturas.map((reg) => {
                           const pkmn = reg.pokemon_name || ''
                           const rawStatus = reg.estado || 'VIVO'
-                          // Si viene de 'PENDIENTE' o 'EN_BOX', forzamos mapeo a 'VIVO'
                           const currentStatus = (rawStatus === 'PENDIENTE' || rawStatus === 'EN_BOX') ? 'VIVO' : rawStatus
                           const activeState = ESTADOS.find(e => e.id === currentStatus) || ESTADOS[0]
                           const spriteUrl = getSpriteUrl(reg.pokemon_id, reg.is_shiny)
 
                           return (
-                            <div key={reg.id} className="flex flex-col items-center justify-center gap-1 group w-full max-w-[100px] bg-black/30 p-2 rounded-xl border border-white/5">
+                            <div key={reg.id} className="flex flex-col items-center justify-center gap-1.5 group w-full max-w-[160px] bg-black/40 p-2 rounded-2xl border border-white/10 shadow-md">
+                              {/* Tarjeta con overflow-hidden para recortar bordes vacíos al hacer zoom */}
                               <div 
-                                className={`relative flex flex-col items-center justify-center w-14 h-14 bg-white/[0.02] rounded-xl border transition-all p-1 ${
+                                className={`relative flex flex-col items-center justify-center w-28 h-28 bg-white/[0.03] rounded-xl border overflow-hidden transition-all ${
                                   canEditThisCell 
-                                    ? 'cursor-pointer hover:bg-white/[0.06] border-white/10 hover:border-amber-500/50' 
+                                    ? 'cursor-pointer hover:bg-white/[0.08] border-white/10 hover:border-amber-500/50' 
                                     : 'cursor-default border-white/5 opacity-80'
                                 }`}
                                 onClick={() => canEditThisCell && handleOpenActionMenu(reg, j.name)}
                               >
                                 {reg.is_shiny && (
-                                  <span className="absolute top-1 left-1 text-xs" title="Shiny">✨</span>
+                                  <span className="absolute top-1 left-1 text-sm z-10" title="Shiny">✨</span>
                                 )}
 
+                                {/* Sprite ampliado con scale-135 para rellenar la caja casi al 100% */}
                                 {spriteUrl ? (
                                   <img
                                     src={spriteUrl}
                                     alt={pkmn}
                                     referrerPolicy="no-referrer"
-                                    className={`w-10 h-10 object-contain transition-all ${
-                                      canEditThisCell ? 'group-hover:scale-110' : ''
+                                    className={`w-full h-full object-contain scale-135 transition-transform ${
+                                      canEditThisCell ? 'group-hover:scale-150' : ''
                                     } ${
                                       currentStatus === 'MUERTO' 
                                         ? 'grayscale opacity-35' 
@@ -369,32 +409,32 @@ function TimelineContent() {
                                     }`}
                                   />
                                 ) : (
-                                  <span className="text-[10px] text-zinc-400 capitalize">{pkmn}</span>
+                                  <span className="text-xs text-zinc-400 capitalize">{pkmn}</span>
                                 )}
 
                                 {currentStatus === 'MUERTO' && (
                                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <span className="text-rose-500 font-bold text-xl">✕</span>
+                                    <span className="text-rose-500 font-bold text-4xl z-10">✕</span>
                                   </div>
                                 )}
 
                                 {currentStatus === 'ESCAPADO' && (
                                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                                    <span className="text-amber-400 text-xs">💨</span>
+                                    <span className="text-amber-400 text-xl z-10">💨</span>
                                   </div>
                                 )}
                               </div>
 
-                              <span className="text-[11px] font-semibold text-zinc-200 capitalize truncate max-w-full">{pkmn}</span>
+                              <span className="text-xs font-bold text-zinc-200 capitalize truncate max-w-full">{pkmn}</span>
 
                               {reg.habilidad && (
-                                <span className="text-[9px] text-sky-400 bg-sky-950/60 border border-sky-800/40 px-1 py-0.5 rounded truncate max-w-[85px]">
+                                <span className="text-[10px] text-sky-400 font-semibold bg-sky-950/60 border border-sky-800/40 px-2 py-0.5 rounded-md truncate max-w-[130px]">
                                   {reg.habilidad}
                                 </span>
                               )}
 
-                              <div className="flex items-center justify-center gap-1 mt-0.5">
-                                <span className={`w-1.5 h-1.5 rounded-full ${activeState?.color || 'bg-emerald-500'}`}></span>
+                              <div className="flex items-center justify-center gap-1.5 mt-0.5">
+                                <span className={`w-2 h-2 rounded-full ${activeState?.color || 'bg-emerald-500'}`}></span>
                                 
                                 {canEditThisCell ? (
                                   <select
@@ -405,7 +445,7 @@ function TimelineContent() {
                                       reg.habilidad,
                                       reg.is_shiny
                                     )}
-                                    className="bg-transparent text-[10px] font-semibold text-zinc-400 uppercase focus:outline-none cursor-pointer hover:text-zinc-200 transition-colors"
+                                    className="bg-transparent text-[11px] font-semibold text-zinc-400 uppercase focus:outline-none cursor-pointer hover:text-zinc-200 transition-colors"
                                   >
                                     {ESTADOS.map(s => (
                                       <option key={s.id} value={s.id} className="bg-[#0b0f17] text-zinc-200">
@@ -414,7 +454,7 @@ function TimelineContent() {
                                     ))}
                                   </select>
                                 ) : (
-                                  <span className="text-[10px] font-semibold text-zinc-400 uppercase">
+                                  <span className="text-[11px] font-semibold text-zinc-400 uppercase">
                                     {activeState?.label}
                                   </span>
                                 )}
@@ -427,11 +467,11 @@ function TimelineContent() {
                           <button
                             type="button"
                             onClick={() => handleOpenSelectModal(j.id, j.name, ruta)}
-                            className="w-full py-1 px-2 rounded-lg border border-dashed border-amber-500/40 hover:border-amber-400 text-amber-400 flex items-center justify-center transition-all font-bold text-xs cursor-pointer bg-amber-500/5 hover:bg-amber-500/10 gap-1"
+                            className="w-full py-2 px-2 rounded-xl border border-dashed border-amber-500/40 hover:border-amber-400 text-amber-400 flex items-center justify-center transition-all font-bold text-xs cursor-pointer bg-amber-500/5 hover:bg-amber-500/10 gap-1 max-w-[160px]"
                             title="Añadir otro Pokémon a este tramo"
                           >
-                            <span>+</span>
-                            <span className="text-[10px] uppercase font-semibold">Añadir</span>
+                            <span className="text-sm">+</span>
+                            <span className="text-[10px] uppercase font-bold">Añadir</span>
                           </button>
                         )}
 

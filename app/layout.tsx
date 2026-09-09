@@ -3,17 +3,19 @@
 import './globals.css'
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { usePathname } from 'next/navigation' // 1. Importamos usePathname
+import { usePathname } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
+import { JUGADORES } from '@/lib/constants'
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const [loggedPlayer, setLoggedPlayer] = useState<{ id: number; name: string } | null>(null)
-  
-  // 2. Obtenemos la ruta actual y comprobamos si es la Home
+  const [liveMap, setLiveMap] = useState<Record<number, boolean>>({})
+
   const pathname = usePathname()
   const isLandingPage = pathname === '/'
 
   useEffect(() => {
-    // Función para sincronizar la sesión del jugador activa
+    // 1. Sincronizar sesión del jugador
     const checkSession = () => {
       const saved = localStorage.getItem('logged_jugador')
       if (saved) {
@@ -24,10 +26,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }
 
     checkSession()
-
-    // Sincronizar en tiempo real si cambia la sesión o el perfil
     window.addEventListener('storage', checkSession)
-    return () => window.removeEventListener('storage', checkSession)
+
+    // 2. Cargar estado inicial de directos desde Supabase
+    const fetchDirectos = async () => {
+      const { data } = await supabase.from('directos').select('*')
+      if (data) {
+        const map: Record<number, boolean> = {}
+        data.forEach((d: any) => { map[d.jugador_id] = d.is_live })
+        setLiveMap(map)
+      }
+    }
+    fetchDirectos()
+
+    // 3. Escuchar cambios de directos en tiempo real (actualizados por la API)
+    const channel = supabase.channel('realtime_directos_layout')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'directos' }, (payload: any) => {
+        const updated = payload.new
+        if (updated) {
+          setLiveMap(prev => ({ ...prev, [updated.jugador_id]: updated.is_live }))
+        }
+      })
+      .subscribe()
+
+    return () => {
+      window.removeEventListener('storage', checkSession)
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const handleLogout = () => {
@@ -36,7 +61,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     window.location.href = '/'
   }
 
-  // 3. Helper para Renderizar Enlaces (Activos o Deshabilitados)
   const renderNavLink = (href: string, label: string) => {
     if (isLandingPage) {
       return (
@@ -61,20 +85,50 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     )
   }
 
+  const jugadoresEnVivo = JUGADORES.filter(j => liveMap[j.id])
+
   return (
     <html lang="es">
       <body className="bg-slate-950 text-slate-100 min-h-screen font-sans">
         <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-50">
-          <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+          <div className="max-w-[98vw] mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
             
-            {/* BRANDING */}
-            <Link href="/" className="hover:opacity-80 transition-opacity">
-              <h1 className="text-xl font-bold tracking-tight text-amber-400 uppercase">
-                NUZTRACKER
-              </h1>
-            </Link>
+            {/* BRANDING Y INDICADOR EN DIRECTO */}
+            <div className="flex flex-wrap items-center gap-6">
+              <Link href="/" className="hover:opacity-80 transition-opacity">
+                <h1 className="text-xl font-bold tracking-tight text-amber-400 uppercase">
+                  NUZTRACKER
+                </h1>
+              </Link>
 
-            {/* NAVEGACIÓN Y SESIÓN DE JUGADOR */}
+              {/* Ticker de Jugadores en Directo */}
+              {!isLandingPage && (
+                <div className="flex items-center gap-2 text-xs border-l border-slate-800 pl-4 py-1">
+                  <span className="text-slate-400 font-semibold uppercase text-[10px] tracking-wider">En directo:</span>
+                  {jugadoresEnVivo.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {jugadoresEnVivo.map(j => (
+                        <a
+                          key={j.id}
+                          href={j.twitchUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="flex items-center gap-1.5 bg-rose-500/10 border border-rose-500/40 text-rose-400 px-2.5 py-0.5 rounded-lg hover:bg-rose-500/20 transition-all text-xs font-bold animate-pulse"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                          <span>{j.name}</span>
+                          <span className="text-[10px] opacity-60">↗</span>
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <span className="text-slate-600 text-xs italic">Nadie emitiendo</span>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* NAVEGACIÓN Y PERFIL DE JUGADOR */}
             <div className="flex flex-wrap items-center justify-center sm:justify-end gap-3">
               <nav className="flex gap-2 bg-slate-950 p-1 rounded-xl border border-slate-800">
                 {renderNavLink('/timeline', 'Capturas')}
@@ -82,7 +136,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 {renderNavLink('/summary', 'TORNEO')}
               </nav>
 
-              {/* BADGE DEL PERFIL A LA DERECHA */}
+              {/* Badge Perfil */}
               {loggedPlayer ? (
                 <div className="flex items-center gap-2 bg-slate-950 p-1 pl-3 rounded-xl border border-amber-500/30">
                   <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
@@ -104,7 +158,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           </div>
         </header>
-        <main className="max-w-7xl mx-auto p-6">{children}</main>
+        <main className="max-w-[98vw] mx-auto p-4">{children}</main>
       </body>
     </html>
   )
