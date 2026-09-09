@@ -403,7 +403,7 @@ function TimelineContent() {
                                     } ${
                                       currentStatus === 'MUERTO' 
                                         ? 'grayscale opacity-35' 
-                                        : currentStatus === 'ESCAPADO' 
+                                        : currentStatus === 'ESCAPADO' || currentStatus === 'INTERCAMBIADO'
                                         ? 'opacity-25 grayscale' 
                                         : 'opacity-100'
                                     }`}
@@ -421,6 +421,12 @@ function TimelineContent() {
                                 {currentStatus === 'ESCAPADO' && (
                                   <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                                     <span className="text-amber-400 text-xl z-10">💨</span>
+                                  </div>
+                                )}
+
+                                {currentStatus === 'INTERCAMBIADO' && (
+                                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                    <span className="text-purple-400 text-xl z-10">🔄</span>
                                   </div>
                                 )}
                               </div>

@@ -15,6 +15,7 @@ export const ESTADOS = [
   { id: 'VIVO', label: 'Vivo', color: 'bg-emerald-500' },
   { id: 'MUERTO', label: 'Muerto', color: 'bg-rose-500' },
   { id: 'ESCAPADO', label: 'Escapado', color: 'bg-amber-500' },
+  { id: 'INTERCAMBIADO', label: 'Intercambiado', color: 'bg-purple-500' },
 ]
 
 export const RUTAS_ANIL = [
