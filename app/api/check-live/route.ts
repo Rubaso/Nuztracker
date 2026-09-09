@@ -2,7 +2,16 @@ import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { JUGADORES } from '@/lib/constants'
 
-export async function GET() {
+export async function GET(request: Request) {
+  // 🛡️ 0. Validar token de seguridad
+  const cronSecret = process.env.CRON_SECRET
+  if (cronSecret) {
+    const authHeader = request.headers.get('authorization')
+    if (authHeader !== `Bearer ${cronSecret}`) {
+      return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+    }
+  }
+
   try {
     const clientId = process.env.TWITCH_CLIENT_ID
     const clientSecret = process.env.TWITCH_CLIENT_SECRET
