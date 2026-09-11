@@ -11,6 +11,8 @@ export const JUGADORES = [
   { id: 6, name: "Tencachy 👍", twitchUser: "tencachy", twitchUrl: "https://www.twitch.tv/tencachy" },
   { id: 7, name: "GoblinPeke 👺", twitchUser: "goblinpeke", twitchUrl: "https://www.twitch.tv/goblinpeke" },
   { id: 8, name: "Lordzacas 🏎️", twitchUser: "lordzacas", twitchUrl: "https://www.twitch.tv/lordzacas" },
+  { id: 9, name: "Zonenzonao 🤪​", twitchUser: "Zonenzonao", twitchUrl: "https://www.twitch.tv/zonenzonao" },
+  { id: 10, name: "Davvo ", twitchUser: "davvo", twitchUrl: "https://www.twitch.tv/davvo" },
 ]
 
 export const ESTADOS = [
