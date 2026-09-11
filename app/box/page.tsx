@@ -3,16 +3,138 @@
 import { useEffect, useState, Suspense } from 'react'
 import { supabase } from '@/lib/supabase'
 import { SALA_ID, JUGADORES } from '@/lib/constants'
-import EvolveModal from '@/components/EvolveModal'
+
+// --- INFORMACIÓN DE HABILIDADES EN CASTELLANO ---
+type AbilityInfo = {
+  name: string
+  description: string
+}
+
+const abilityCache = new Map<string, AbilityInfo | null>()
+
+const normalizeAbilityForPokeApi = (ability: string) =>
+  ability.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+
+const cleanAbilityText = (text: string) =>
+  text.replace(/\f/g, ' ').replace(/\n+/g, ' ').replace(/\s+/g, ' ').trim()
+
+async function fetchAbilityInfo(ability: string): Promise<AbilityInfo | null> {
+  const cacheKey = normalizeAbilityForPokeApi(ability)
+  if (!cacheKey) return null
+  if (abilityCache.has(cacheKey)) return abilityCache.get(cacheKey) ?? null
+
+  try {
+    // El save guarda SANDSPIT, mientras que PokéAPI usa sand-spit.
+    // Buscamos el nombre real de PokéAPI ignorando guiones/espacios.
+    const listResponse = await fetch('https://pokeapi.co/api/v2/ability?limit=1000')
+    if (!listResponse.ok) {
+      abilityCache.set(cacheKey, null)
+      return null
+    }
+
+    const listData = await listResponse.json()
+    const apiAbility = listData.results?.find(
+      (entry: any) => normalizeAbilityForPokeApi(entry.name) === cacheKey
+    )
+
+    if (!apiAbility?.name) {
+      abilityCache.set(cacheKey, null)
+      return null
+    }
+
+    const response = await fetch(
+      `https://pokeapi.co/api/v2/ability/${encodeURIComponent(apiAbility.name)}`
+    )
+    if (!response.ok) {
+      abilityCache.set(cacheKey, null)
+      return null
+    }
+
+    const data = await response.json()
+    const spanishName = data.names?.find((e: any) => e.language?.name === 'es')?.name
+    const englishName = data.names?.find((e: any) => e.language?.name === 'en')?.name
+    const spanishEffect = data.effect_entries?.find((e: any) => e.language?.name === 'es')?.effect
+    const spanishFlavor = data.flavor_text_entries?.find((e: any) => e.language?.name === 'es')?.flavor_text
+    const englishEffect = data.effect_entries?.find((e: any) => e.language?.name === 'en')?.effect
+    const englishFlavor = data.flavor_text_entries?.find((e: any) => e.language?.name === 'en')?.flavor_text
+
+    const info = {
+      name: cleanAbilityText(spanishName || englishName || ability),
+      description: cleanAbilityText(
+        spanishEffect || spanishFlavor || englishEffect || englishFlavor ||
+        'No hay una descripción disponible para esta habilidad.'
+      )
+    }
+
+    abilityCache.set(cacheKey, info)
+    return info
+  } catch (error) {
+    console.error(`Error obteniendo la habilidad "${ability}":`, error)
+    abilityCache.set(cacheKey, null)
+    return null
+  }
+}
+
+function AbilityTooltip({ ability }: { ability: string }) {
+  const [info, setInfo] = useState<AbilityInfo | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [showTooltip, setShowTooltip] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    setLoading(true)
+
+    fetchAbilityInfo(ability).then(result => {
+      if (!cancelled) {
+        setInfo(result)
+        setLoading(false)
+      }
+    })
+
+    return () => { cancelled = true }
+  }, [ability])
+
+  const displayName = info?.name || ability
+
+  return (
+    <div
+      className="relative flex justify-center max-w-[140px]"
+      onMouseEnter={() => setShowTooltip(true)}
+      onMouseLeave={() => setShowTooltip(false)}
+    >
+      <span
+        className="text-[10px] text-sky-400 font-semibold bg-sky-950/60 border border-sky-800/40 px-2 py-0.5 rounded-md truncate max-w-[140px] cursor-help hover:text-sky-300 hover:border-sky-600/60 transition-colors"
+        tabIndex={0}
+        onFocus={() => setShowTooltip(true)}
+        onBlur={() => setShowTooltip(false)}
+        title={displayName}
+      >
+        {displayName}
+      </span>
+
+      {showTooltip && (
+        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 max-w-[calc(100vw-2rem)] z-[999] pointer-events-none">
+          <div className="bg-[#0f172a] border border-sky-800/70 rounded-xl p-3 shadow-2xl text-left">
+            <div className="text-xs font-bold text-sky-300 mb-1.5">{displayName}</div>
+            {loading ? (
+              <div className="text-[10px] leading-relaxed text-zinc-400">Cargando descripción...</div>
+            ) : info ? (
+              <div className="text-[10px] leading-relaxed text-zinc-300">{info.description}</div>
+            ) : (
+              <div className="text-[10px] leading-relaxed text-zinc-400">No se ha encontrado información para esta habilidad.</div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function BoxContent() {
   const [loggedPlayer, setLoggedPlayer] = useState<{ id: number; name: string } | null>(null)
   const [capturas, setCapturas] = useState<any[]>([])
   const [selectedJugadorId, setSelectedJugadorId] = useState<number>(JUGADORES[0].id)
   const [search, setSearch] = useState('')
-
-  const [evolveModalOpen, setEvolveModalOpen] = useState(false)
-  const [selectedEvolvePkmn, setSelectedEvolvePkmn] = useState<any | null>(null)
 
   // 1. Obtener la sesión activa del jugador desde localStorage
   useEffect(() => {
@@ -56,40 +178,6 @@ function BoxContent() {
 
     return () => { supabase.removeChannel(channel) }
   }, [])
-
-  const handleEvolve = async (evolvedName: string, evolvedId: number, nuevaHabilidad?: string) => {
-    if (!canEditCurrentBox || !selectedEvolvePkmn) return
-
-    const updates = {
-      is_evolved: true,
-      evolved_name: evolvedName.toLowerCase().trim(),
-      evolved_id: evolvedId,
-      evolved_habilidad: nuevaHabilidad || null,
-    }
-
-    setCapturas(prev => prev.map(c => c.id === selectedEvolvePkmn.id ? { ...c, ...updates } : c))
-    setEvolveModalOpen(false)
-    setSelectedEvolvePkmn(null)
-
-    await supabase.from('capturas').update(updates).eq('id', selectedEvolvePkmn.id)
-  }
-
-  const handleRevertEvolve = async () => {
-    if (!canEditCurrentBox || !selectedEvolvePkmn) return
-
-    const updates = {
-      is_evolved: false,
-      evolved_name: null,
-      evolved_id: null,
-      evolved_habilidad: null,
-    }
-
-    setCapturas(prev => prev.map(c => c.id === selectedEvolvePkmn.id ? { ...c, ...updates } : c))
-    setEvolveModalOpen(false)
-    setSelectedEvolvePkmn(null)
-
-    await supabase.from('capturas').update(updates).eq('id', selectedEvolvePkmn.id)
-  }
 
   const toggleTeam = async (pkmn: any) => {
     if (!canEditCurrentBox) return
@@ -145,26 +233,6 @@ function BoxContent() {
 
   return (
     <div className="space-y-8 p-6 max-w-[95vw] mx-auto">
-      {canEditCurrentBox && selectedEvolvePkmn && (
-        <EvolveModal
-          isOpen={evolveModalOpen}
-          onClose={() => {
-            setEvolveModalOpen(false)
-            setSelectedEvolvePkmn(null)
-          }}
-          onEvolve={handleEvolve}
-          onRevert={handleRevertEvolve}
-          basePokemon={{
-            name: selectedEvolvePkmn.pokemon_name,
-            id: selectedEvolvePkmn.pokemon_id,
-            isShiny: selectedEvolvePkmn.is_shiny,
-            isEvolved: selectedEvolvePkmn.is_evolved,
-            evolvedName: selectedEvolvePkmn.evolved_name,
-            habilidadActual: selectedEvolvePkmn.evolved_habilidad || selectedEvolvePkmn.habilidad || ''
-          }}
-        />
-      )}
-
       {/* BARRA SUPERIOR DE BÚSQUEDA Y NOMBRE DE JUGADOR */}
       <div className="flex flex-col md:flex-row items-center justify-between gap-6 border-b border-slate-800/80 pb-6">
         <div className="relative w-full md:w-80">
@@ -299,23 +367,7 @@ function BoxContent() {
                         <span className="absolute top-3 left-9 text-sm z-10" title="Shiny">✨</span>
                       )}
 
-                      {/* Botón de Evolución */}
-                      {canEditCurrentBox && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedEvolvePkmn(c)
-                            setEvolveModalOpen(true)
-                          }}
-                          className={`absolute top-3 right-3 text-[11px] font-bold px-2.5 py-1 rounded-lg border transition-all cursor-pointer z-10 ${
-                            c.is_evolved 
-                              ? 'bg-amber-500/20 text-amber-300 border-amber-500/40 hover:bg-amber-500/30' 
-                              : 'bg-slate-800/80 text-slate-300 border-slate-700 hover:text-amber-400 hover:border-amber-400/50'
-                          }`}
-                        >
-                          ⚡ {c.is_evolved ? 'Evolucionado' : 'Evolucionar'}
-                        </button>
-                      )}
+
 
                       {c.is_evolved && c.evolved_name ? (
                         <div className="flex items-center justify-center gap-3 mt-7 mb-2">
@@ -333,9 +385,7 @@ function BoxContent() {
                             <img src={evolvedSpriteUrl!} alt={c.evolved_name} className="w-24 h-24 object-contain drop-shadow-md" />
                             <span className="text-xs font-bold text-amber-300 capitalize mt-1">{c.evolved_name}</span>
                             {c.evolved_habilidad && (
-                              <span className="text-[10px] text-amber-200 font-semibold bg-amber-950/90 px-2 py-0.5 rounded-md border border-amber-800/60 mt-1 truncate max-w-[120px]">
-                                {c.evolved_habilidad}
-                              </span>
+                              <AbilityTooltip ability={c.evolved_habilidad} />
                             )}
                           </div>
                         </div>
@@ -347,9 +397,7 @@ function BoxContent() {
                             {c.pokemon_name}
                           </span>
                           {c.habilidad && (
-                            <span className="text-xs text-sky-400 font-semibold bg-sky-950/60 px-2.5 py-0.5 rounded-md border border-sky-800/40 mt-1.5 truncate max-w-[140px]">
-                              {c.habilidad}
-                            </span>
+                            <AbilityTooltip ability={c.habilidad} />
                           )}
                         </div>
                       )}

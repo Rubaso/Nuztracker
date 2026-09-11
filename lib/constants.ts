@@ -1,3 +1,5 @@
+// lib/constants.ts
+
 export const SALA_ID = "anil-locke-2026"
 
 export const JUGADORES = [

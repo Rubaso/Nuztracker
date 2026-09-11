@@ -39,7 +39,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     }
     fetchDirectos()
 
-    // 3. Escuchar cambios de directos en tiempo real (actualizados por la API)
+    // 3. Escuchar cambios de directos en tiempo real
     const channel = supabase.channel('realtime_directos_layout')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'directos' }, (payload: any) => {
         const updated = payload.new
@@ -135,6 +135,35 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 {renderNavLink('/box', 'Nuestro PC')}
                 {renderNavLink('/summary', 'TORNEO')}
               </nav>
+
+              {/* BOTONERA SAVE Y POKEPASTE (Solo en /timeline para jugadores logueados) */}
+              {loggedPlayer && pathname === '/timeline' && (
+                <div className="flex items-center gap-2">
+                  <label className="flex items-center gap-1.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-black text-xs font-black px-3 py-2 rounded-xl cursor-pointer shadow-lg transition-all hover:scale-105 active:scale-95">
+                    <span>📂</span>
+                    <span>Cargar Save</span>
+                    <input
+                      type="file"
+                      accept=".rxdata,.sav"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        if (file) {
+                          window.dispatchEvent(new CustomEvent('upload_save_file', { detail: file }))
+                        }
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+
+                  <button
+                    onClick={() => window.dispatchEvent(new Event('open_pokepaste_modal'))}
+                    className="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 text-xs font-bold px-3 py-2 rounded-xl transition-all hover:border-amber-500/50 cursor-pointer"
+                  >
+                    <span>📋</span>
+                    <span>PokéPaste</span>
+                  </button>
+                </div>
+              )}
 
               {/* Badge Perfil */}
               {loggedPlayer ? (

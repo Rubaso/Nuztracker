@@ -1,3 +1,4 @@
+// app/api/check-live/route.ts
 import { NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { JUGADORES } from '@/lib/constants'
