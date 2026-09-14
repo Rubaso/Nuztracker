@@ -30,7 +30,6 @@ function TorneoContent() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [directosData, setDirectosData] = useState<Record<string, string>>({})
   const [equiposEntregados, setEquiposEntregados] = useState<Set<number>>(new Set())
-  const [pokepastesPublic, setPokepastesPublic] = useState(false)
 
   const [teamModalOpen, setTeamModalOpen] = useState(false)
   const [selectedPlayerForTeam, setSelectedPlayerForTeam] = useState<{ id?: number; name: string; pokepaste_text: string } | null>(null)
@@ -78,8 +77,9 @@ function TorneoContent() {
   const fetchDirectos = async () => {
     let query = supabase.from('directos').select('jugador_id, pokepaste_text')
 
-    const todosLosEquiposEntregados = jugadoresDelTorneo.length > 0 && jugadoresConEquipo.length === jugadoresDelTorneo.length
-    if (!todosLosEquiposEntregados) {
+    const todosEquipos = JUGADORES.filter((j) => jugadoresEnBracket.has(j.name))
+    const todosLosEquiposEntregadosActual = todosEquipos.length > 0 && todosEquipos.every((j) => equiposEntregados.has(j.id))
+    if (!todosLosEquiposEntregadosActual) {
       if (!loggedPlayer?.id) {
         setDirectosData({})
         return
@@ -151,20 +151,18 @@ function TorneoContent() {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [loggedPlayer?.id, pokepastesPublic])
+  }, [loggedPlayer?.id])
 
   const saveBracket = async (
     newRounds: Round[],
     lockedStatus = isLocked,
-    size = maxParticipants,
-    publishedStatus = pokepastesPublic
+    size = maxParticipants
   ) => {
     if (!canEdit) return
 
     setRounds(newRounds)
     setIsLocked(lockedStatus)
     setMaxParticipants(size)
-    setPokepastesPublic(publishedStatus)
     setTournamentSaved(false)
 
     await supabase.from('torneo').upsert({
@@ -173,7 +171,6 @@ function TorneoContent() {
       bracket_data: newRounds,
       is_locked: lockedStatus,
       max_participants: size,
-      pokepastes_public: todosLosEquiposEntregados,
       updated_at: new Date().toISOString(),
     })
   }
@@ -302,11 +299,11 @@ function TorneoContent() {
     if (!canEdit) return
 
     if (!isLocked) {
-      saveBracket(rounds, true, maxParticipants, todosLosEquiposEntregados)
+      saveBracket(rounds, true, maxParticipants)
       return
     }
 
-    saveBracket(rounds, false, maxParticipants, todosLosEquiposEntregados)
+    saveBracket(rounds, false, maxParticipants)
   }
 
   const jugadoresEnBracket = new Set<string>()
@@ -321,10 +318,6 @@ function TorneoContent() {
   const jugadoresDelTorneo = JUGADORES.filter((j) => jugadoresEnBracket.has(j.name))
   const jugadoresConEquipo = jugadoresDelTorneo.filter((j) => equiposEntregados.has(j.id))
   const todosLosEquiposEntregados = jugadoresDelTorneo.length > 0 && jugadoresConEquipo.length === jugadoresDelTorneo.length
-
-  useEffect(() => {
-    setPokepastesPublic(todosLosEquiposEntregados)
-  }, [todosLosEquiposEntregados])
 
   const granFinal = rounds[rounds.length - 1]
   const campeon =
@@ -658,11 +651,11 @@ function TorneoContent() {
       </div>
 
       <div className={`rounded-2xl border px-4 py-3 text-xs font-bold ${
-        pokepastesPublic
+        todosLosEquiposEntregados
           ? 'bg-emerald-950/30 border-emerald-800/50 text-emerald-300'
           : 'bg-slate-900/60 border-slate-800 text-slate-400'
       }`}>
-        {pokepastesPublic
+        {todosLosEquiposEntregados
           ? '📢 Todos los equipos entregados: todos pueden ver los PokéPaste del torneo.'
           : '🔒 Equipos privados: cada jugador puede ver y editar solo el suyo. Se desbloquearán para todos automáticamente cuando TODOS los participantes lo hayan entregado.'}
       </div>

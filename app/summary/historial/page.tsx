@@ -124,7 +124,7 @@ export default function HistorialTorneosPage() {
           pokepasteText={selectedPlayer.pokepaste}
           isPublished
           isEditable={false}
-          onSavePokepaste={() => {}}
+          onSavePokepaste={async () => {}}
         />
       )}
 
