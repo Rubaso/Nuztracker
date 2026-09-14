@@ -249,7 +249,7 @@ function resolveSpecialRoute(
 
   // Eevee regalo: Map080.
   // El Pokémon puede estar randomizado, así que no comprobamos su especie.
-  if (obtainMap === 80 && obtainMethod === 4) {
+  if (obtainMap === 80) {
     return 'Eevee'
   }
 
