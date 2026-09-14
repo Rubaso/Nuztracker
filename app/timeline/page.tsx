@@ -5,187 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { SALA_ID, JUGADORES, ESTADOS } from '@/lib/constants'
 import { MAP_ANIL_41 } from '@/lib/mapAnil'
 import PokemonSelectModal from '@/components/PokemonSelectModal'
-
-// --- INFORMACIÓN DE HABILIDADES DESDE POKÉAPI ---
-type AbilityInfo = {
-  name: string
-  description: string
-}
-
-const abilityCache = new Map<string, AbilityInfo | null>()
-
-const normalizeAbilityForPokeApi = (ability: string) => {
-  return ability
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]/g, '')
-}
-
-const fetchAbilityInfo = async (ability: string): Promise<AbilityInfo | null> => {
-  const cacheKey = normalizeAbilityForPokeApi(ability)
-
-  if (!cacheKey) return null
-  if (abilityCache.has(cacheKey)) return abilityCache.get(cacheKey) ?? null
-
-  try {
-    // Los saves de Pokémon usan símbolos como SANDSPIT, mientras que PokéAPI
-    // usa nombres con guiones, por ejemplo sand-spit. Buscamos primero el
-    // recurso correcto comparando ambas formas sin separadores.
-    const listResponse = await fetch('https://pokeapi.co/api/v2/ability?limit=1000')
-    if (!listResponse.ok) {
-      abilityCache.set(cacheKey, null)
-      return null
-    }
-
-    const listData = await listResponse.json()
-    const apiAbility = listData.results?.find(
-      (entry: any) => normalizeAbilityForPokeApi(entry.name) === cacheKey
-    )
-
-    if (!apiAbility?.name) {
-      abilityCache.set(cacheKey, null)
-      return null
-    }
-
-    const response = await fetch(
-      `https://pokeapi.co/api/v2/ability/${encodeURIComponent(apiAbility.name)}`
-    )
-
-    if (!response.ok) {
-      abilityCache.set(cacheKey, null)
-      return null
-    }
-
-    const data = await response.json()
-
-    const spanishName =
-      data.names?.find((entry: any) => entry.language?.name === 'es')?.name
-
-    const englishName =
-      data.names?.find((entry: any) => entry.language?.name === 'en')?.name
-
-    const spanishEffect =
-      data.effect_entries?.find(
-        (entry: any) => entry.language?.name === 'es'
-      )?.effect
-
-    const spanishFlavor =
-      data.flavor_text_entries?.find(
-        (entry: any) => entry.language?.name === 'es'
-      )?.flavor_text
-
-    const englishEffect =
-      data.effect_entries?.find(
-        (entry: any) => entry.language?.name === 'en'
-      )?.effect
-
-    const englishFlavor =
-      data.flavor_text_entries?.find(
-        (entry: any) => entry.language?.name === 'en'
-      )?.flavor_text
-
-    const info: AbilityInfo = {
-      name: spanishName || englishName || ability,
-      description:
-        spanishEffect ||
-        spanishFlavor ||
-        englishEffect ||
-        englishFlavor ||
-        'No hay una descripción disponible para esta habilidad.'
-    }
-
-    abilityCache.set(cacheKey, info)
-    return info
-  } catch (error) {
-    console.error(`Error obteniendo la habilidad "${ability}":`, error)
-    abilityCache.set(cacheKey, null)
-    return null
-  }
-}
-
-function cleanAbilityText(text: string) {
-  return text
-    .replace(/\f/g, ' ')
-    .replace(/\n+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function AbilityTooltip({ ability }: { ability: string }) {
-  const [info, setInfo] = useState<AbilityInfo | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [showTooltip, setShowTooltip] = useState(false)
-
-  useEffect(() => {
-    let cancelled = false
-
-    const loadAbility = async () => {
-      setLoading(true)
-
-      const result = await fetchAbilityInfo(ability)
-
-      if (!cancelled) {
-        if (result) {
-          result.name = cleanAbilityText(result.name)
-          result.description = cleanAbilityText(result.description)
-        }
-
-        setInfo(result)
-        setLoading(false)
-      }
-    }
-
-    loadAbility()
-
-    return () => {
-      cancelled = true
-    }
-  }, [ability])
-
-  const displayName = info?.name || ability
-
-  return (
-    <div
-      className="relative flex justify-center max-w-[130px]"
-      onMouseEnter={() => setShowTooltip(true)}
-      onMouseLeave={() => setShowTooltip(false)}
-    >
-      <button
-        type="button"
-        className="text-[10px] text-sky-400 font-semibold bg-sky-950/60 border border-sky-800/40 px-2 py-0.5 rounded-md truncate max-w-[130px] cursor-help hover:text-sky-300 hover:border-sky-600/60 transition-colors"
-        onFocus={() => setShowTooltip(true)}
-        onBlur={() => setShowTooltip(false)}
-        title={displayName}
-      >
-        {displayName}
-      </button>
-
-      {showTooltip && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-72 z-[999] pointer-events-none">
-          <div className="bg-[#0f172a] border border-sky-800/70 rounded-xl p-3 shadow-2xl text-left">
-            <div className="text-xs font-bold text-sky-300 mb-1.5">
-              {displayName}
-            </div>
-
-            {loading ? (
-              <div className="text-[10px] leading-relaxed text-zinc-400">
-                Cargando descripción...
-              </div>
-            ) : info ? (
-              <div className="text-[10px] leading-relaxed text-zinc-300">
-                {info.description}
-              </div>
-            ) : (
-              <div className="text-[10px] leading-relaxed text-zinc-400">
-                No se ha encontrado información para esta habilidad.
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-    </div>
-  )
-}
+import TeamViewerModal from '@/components/TeamViewerModal'
 
 // JSON con la estructura de tramos, gimnasios y zonas
 const TRAMOS_DATA = [
@@ -195,7 +15,6 @@ const TRAMOS_DATA = [
     capturas: 10,
     capturas_acumuladas: 10,
     zonas: [
-      "INICIAL",
       "Pueblo Paleta",
       "Ruta 1",
       "Ciudad Verde",
@@ -205,46 +24,41 @@ const TRAMOS_DATA = [
       "Bosque Verde",
       "Ciudad Plateada",
       "Pikachu",
+      "Magikarp"
     ]
   },
   {
     tramo: 2,
     gimnasio: "Misty",
-    capturas: 8,
-    capturas_acumuladas: 18,
+    capturas: 5,
+    capturas_acumuladas: 15,
     zonas: [
       "Ruta 3",
       "Monte Moon",
       "Monte Moon Exterior",
       "Ruta 4",
-      "Ciudad Celeste",
-      "Ruta 20",
-      "Ruta 21",
-      "Magikarp",
-      "Don Prodigio Monte Moon",
+      "Ciudad Celeste"
     ]
   },
   {
     tramo: 3,
     gimnasio: "Lt. Surge",
-    capturas: 7,
-    capturas_acumuladas: 25,
+    capturas: 6,
+    capturas_acumuladas: 21,
     zonas: [
       "Ruta 5",
       "Ruta 6",
       "Ciudad Carmín",
       "Ruta 15",
       "Túnel Diglett",
-      "Ruta 11",
-      "Ruta 12",
-      "Don Prodigio SS ANNE"
+      "Ruta 11"
     ]
   },
   {
     tramo: 4,
     gimnasio: "Erika",
-    capturas: 14,
-    capturas_acumuladas: 39,
+    capturas: 13,
+    capturas_acumuladas: 34,
     zonas: [
       "Ruta 9",
       "Ruta 10 Norte",
@@ -258,67 +72,65 @@ const TRAMOS_DATA = [
       "Ruta 16",
       "Ruta 17",
       "Camino de Bicis",
-      "Don Prodigio Centro Comercial",
       "Eevee"
     ]
   },
   {
     tramo: 5,
     gimnasio: "Koga",
-    capturas: 7,
-    capturas_acumuladas: 46,
+    capturas: 6,
+    capturas_acumuladas: 40,
     zonas: [
+      "Ruta 12",
       "Pueblo Marengo",
       "Ruta 13",
       "Ruta 14",
       "Ciudad Fucsia",
-      "Zona Safari",
-      "Don Prodigio Zona Safari"
+      "Zona Safari"
     ]
   },
   {
     tramo: 6,
     gimnasio: "Sabrina",
-    capturas: 4,
-    capturas_acumuladas: 50,
+    capturas: 3,
+    capturas_acumuladas: 43,
     zonas: [
       "Ciudad Azafrán",
       "Dojo Pokémon",
-      "Don Prodigio Estación Magnetotrén",
       "Lapras"
     ]
   },
   {
     tramo: 7,
     gimnasio: "Blaine",
-    capturas: 10,
-    capturas_acumuladas: 60,
+    capturas: 9,
+    capturas_acumuladas: 52,
     zonas: [
       "Ruta 18",
       "Ruta 19",
+      "Ruta 20",
+      "Ruta 21",
       "Islas Espuma",
       "Isla Canela",
       "Mansión Quemada",
       "Volcán Canela",
-      "Central Energía",
-      "Don Prodigio Isla Canela"
+      "Central Energía"
     ]
   },
   {
     tramo: 8,
     gimnasio: "Giovanni",
     capturas: 0,
-    capturas_acumuladas: 60,
+    capturas_acumuladas: 52,
     zonas: []
   },
   {
     tramo: 9,
     gimnasio: "Liga Pokémon",
     capturas: 1,
-    capturas_acumuladas: 61,
+    capturas_acumuladas: 53,
     zonas: [
-      "Ruta 23",
-      "Don Prodigio Ruta 25 Norte"
+      "Ruta 23"
     ]
   }
 ]
@@ -350,6 +162,9 @@ function TimelineContent() {
   const [inputHabilidad, setInputHabilidad] = useState('')
   const [isShinyInput, setIsShinyInput] = useState(false)
 
+  const [teamModalOpen, setTeamModalOpen] = useState(false)
+  const [pokepasteText, setPokepasteText] = useState<string>('')
+
   useEffect(() => {
     const saved = localStorage.getItem('logged_jugador')
     if (saved) {
@@ -376,253 +191,87 @@ function TimelineContent() {
   }
 
   // --- LÓGICA DE PROCESAMIENTO DEL SAVE (.rxdata / .sav) ---
-  const handleProcessSaveFile = useCallback(
-  async (file: File) => {
+  const handleProcessSaveFile = useCallback(async (file: File) => {
     if (!loggedPlayer) {
-      alert('Debes iniciar sesión para subir tu partida.')
+      alert("Debes iniciar sesión para subir tu partida.")
       return
     }
 
     try {
-      const { parseRxDataSave } = await import('@/lib/rxdataParser')
-      const save = await parseRxDataSave(file)
+      const buffer = await file.arrayBuffer()
+      const bytes = new Uint8Array(buffer)
+      const fileString = new TextDecoder("latin1").decode(bytes)
 
-      // Cada Pokémon del save queda identificado por trainerId + personalID.
-      // Esto permite volver a importar el mismo save sin duplicarlo.
-      const pokemonDelSave = save.pokemon.map((pokemon) => ({
-        sala_id: SALA_ID,
-        jugador_id: loggedPlayer.id,
+      // Expresión regular ajustada para leer las cadenas/IDs de Pokémon en el buffer de partida guardada
+      const matches = [...fileString.matchAll(/(?:species|pokemon)[\s\S]*?:([A-Z0-9_]+)[\s\S]*?(?:map|zone)_?id[\s\S]*?:([0-9]+)/gi)]
 
-        ruta:
-          pokemon.ruta ??
-          `Zona desconocida (ID ${pokemon.obtainMap})`,
-
-        pokemon_name: pokemon.pokemonName,
-        pokemon_id: pokemon.pokemonId ?? null,
-
-        // Solo se utiliza para Pokémon nuevos.
-        // En Pokémon ya existentes NO modificamos el estado manual.
-        estado: 'VIVO',
-
-        habilidad: pokemon.ability ?? null,
-        is_shiny: !!pokemon.shiny,
-        is_team: !!pokemon.isTeam,
-
-        save_pokemon_id:
-          `${save.trainerId}:${pokemon.personalID}`,
-
-        origen: 'save'
-      }))
-
-      // Solo comprobamos filas que proceden de un save.
-      // Las capturas manuales tienen save_pokemon_id = null.
-      const {
-        data: existentes,
-        error: errorExistentes
-      } = await supabase
-        .from('capturas')
-        .select(`
-          id,
-          save_pokemon_id,
-          ruta,
-          pokemon_name,
-          pokemon_id,
-          habilidad,
-          is_shiny,
-          is_team,
-          estado
-        `)
-        .eq('sala_id', SALA_ID)
-        .eq('jugador_id', loggedPlayer.id)
-        .not('save_pokemon_id', 'is', null)
-
-      if (errorExistentes) {
-        console.error(
-          'Error comprobando Pokémon existentes:',
-          errorExistentes
-        )
-
-        alert(
-          'La partida se ha leído, pero no se pudieron comprobar las capturas anteriores.'
-        )
-
-        return
+      if (matches.length === 0) {
+        // Fallback de búsqueda si los patrones específicos varían en la codificación RPGMaker
+        const altMatches = [...fileString.matchAll(/species\x00i([0-9]+)[\s\S]*?time_received\x00i([0-9]+)/g)]
+        if (altMatches.length > 0) {
+          matches.push(...altMatches)
+        }
       }
 
-      const existentesPorId = new Map(
-        (existentes ?? []).map((pokemon: any) => [
-          pokemon.save_pokemon_id,
-          pokemon
-        ])
-      )
+      const capturasNuevas: any[] = []
 
-      const nuevos: any[] = []
-      const cambios: { id: number; payload: any }[] = []
+      for (const match of matches) {
+        const speciesVal = match[1]
+        const mapId = match[2]
+        const zonaNombre = MAP_ANIL_41[mapId]
 
-      for (const pokemon of pokemonDelSave) {
-        const existente = existentesPorId.get(
-          pokemon.save_pokemon_id
-        ) as any | undefined
-
-        // Nunca se había importado.
-        if (!existente) {
-          nuevos.push(pokemon)
-          continue
-        }
-
-        /*
-         * Ya existe.
-         *
-         * Sincronizamos los datos que vienen del .rxdata:
-         * - ruta
-         * - especie/nombre
-         * - ID Pokémon
-         * - habilidad
-         * - shiny
-         * - si está en el equipo
-         *
-         * NO sincronizamos "estado", porque ese dato puede haberlo
-         * cambiado manualmente el jugador desde la web.
-         */
-        const payload: any = {}
-
-        if (existente.ruta !== pokemon.ruta) {
-          payload.ruta = pokemon.ruta
-        }
-
-        if (existente.pokemon_name !== pokemon.pokemon_name) {
-          payload.pokemon_name = pokemon.pokemon_name
-        }
-
-        if ((existente.pokemon_id ?? null) !== pokemon.pokemon_id) {
-          payload.pokemon_id = pokemon.pokemon_id
-        }
-
-        if ((existente.habilidad ?? null) !== pokemon.habilidad) {
-          payload.habilidad = pokemon.habilidad
-        }
-
-        if (!!existente.is_shiny !== pokemon.is_shiny) {
-          payload.is_shiny = pokemon.is_shiny
-        }
-
-        if (!!existente.is_team !== pokemon.is_team) {
-          payload.is_team = pokemon.is_team
-        }
-
-        if (Object.keys(payload).length > 0) {
-          cambios.push({
-            id: existente.id,
-            payload
+        if (zonaNombre) {
+          const speciesId = parseInt(speciesVal, 10)
+          capturasNuevas.push({
+            sala_id: SALA_ID,
+            jugador_id: loggedPlayer.id,
+            ruta: zonaNombre,
+            pokemon_name: isNaN(speciesId) ? speciesVal.toLowerCase() : `pokemon_${speciesId}`,
+            pokemon_id: isNaN(speciesId) ? null : speciesId,
+            estado: 'VIVO',
+            habilidad: null,
+            is_shiny: false
           })
         }
       }
 
-      // Insertamos únicamente Pokémon que son realmente nuevos.
-      let insertados: any[] = []
+      if (capturasNuevas.length > 0) {
+        const { error } = await supabase.from('capturas').insert(capturasNuevas)
 
-      if (nuevos.length > 0) {
-        const {
-          data: insertadas,
-          error: errorInsertar
-        } = await supabase
-          .from('capturas')
-          .insert(nuevos)
-          .select()
-
-        if (errorInsertar) {
-          console.error(
-            'Error importando Pokémon nuevos:',
-            errorInsertar
-          )
-
-          alert(
-            'La partida se leyó correctamente, pero hubo un error guardando los Pokémon nuevos.'
-          )
-
-          return
-        }
-
-        insertados = insertadas ?? []
-      }
-
-      // Actualizamos los Pokémon que ya existían.
-      // "estado" NO está en payload, por lo que jamás se sobreescribe.
-      let actualizados = 0
-
-      for (const cambio of cambios) {
-        const { error } = await supabase
-          .from('capturas')
-          .update(cambio.payload)
-          .eq('id', cambio.id)
-
-        if (error) {
-          console.error(
-            `Error actualizando Pokémon ${cambio.id}:`,
-            error
-          )
+        if (!error) {
+          alert(`¡Se han importado ${capturasNuevas.length} capturas desde tu partida!`)
+          fetchCapturas()
         } else {
-          actualizados++
+          console.error("Error al actualizar Supabase:", error)
+          alert("Error al intentar guardar en la base de datos.")
         }
+      } else {
+        alert("Se leyó la partida correctamente pero no se encontraron zonas coincidentes registradas.")
       }
-
-      await fetchCapturas()
-
-      const zonasReconocidas = save.pokemon.filter(
-        (pokemon) => pokemon.ruta !== null
-      ).length
-
-      const yaExistentes =
-        pokemonDelSave.length - nuevos.length
-
-      let mensaje =
-        `Partida importada correctamente.\n\n` +
-        `Pokémon encontrados: ${save.pokemon.length}\n` +
-        `Zonas reconocidas: ${zonasReconocidas}\n` +
-        `Zonas desconocidas: ${save.unknownMapPokemon.length}\n` +
-        `Nuevos añadidos: ${insertados.length}\n` +
-        `Ya existentes: ${yaExistentes}\n` +
-        `Pokémon actualizados: ${actualizados}`
-
-      if (save.unknownMapIds.length > 0) {
-        mensaje +=
-          `\n\n⚠️ IDs de mapa desconocidos:\n` +
-          save.unknownMapIds
-            .map((id) => `- ${id}`)
-            .join('\n')
-
-        if (save.unknownMapPokemon.length > 0) {
-          mensaje +=
-            `\n\nPokémon afectados:\n` +
-            save.unknownMapPokemon
-              .map(
-                (pokemon) =>
-                  `- ${pokemon.pokemonName} → mapa ${pokemon.mapId}`
-              )
-              .join('\n')
-        }
-      }
-
-      alert(mensaje)
-    } catch (error) {
-      console.error(
-        'Error procesando la partida:',
-        error
-      )
-
-      alert(
-        error instanceof Error
-          ? error.message
-          : 'Error leyendo el archivo de partida.'
-      )
+    } catch (err) {
+      console.error("Error procesando Save:", err)
+      alert("Error leyendo el archivo de guardado.")
     }
-  },
-  [
-    loggedPlayer,
-    fetchCapturas
-  ]
-)
+  }, [loggedPlayer, fetchCapturas])
+
   // Escuchar eventos globales del Header (Cargar Save / PokePaste)
+  const handleSavePokepaste = async (newText: string) => {
+    if (!loggedPlayer) return
+
+    const { error } = await supabase.from('directos').upsert({
+      jugador_id: loggedPlayer.id,
+      pokepaste_text: newText,
+    })
+
+    if (error) {
+      console.error('Error guardando el PokéPaste:', error)
+      alert('No se pudo guardar el PokéPaste.')
+      return
+    }
+
+    setPokepasteText(newText)
+  }
+
   useEffect(() => {
     const handleSaveUploadEvent = (e: Event) => {
       const customEvent = e as CustomEvent<File>
@@ -631,8 +280,26 @@ function TimelineContent() {
       }
     }
 
-    const handlePokepasteEvent = () => {
-      alert("Modal de PokéPaste en desarrollo.")
+    const handlePokepasteEvent = async () => {
+      if (!loggedPlayer) {
+        alert('Debes iniciar sesión para gestionar tu PokéPaste.')
+        return
+      }
+
+      const { data, error } = await supabase
+        .from('directos')
+        .select('pokepaste_text')
+        .eq('jugador_id', loggedPlayer.id)
+        .maybeSingle()
+
+      if (error) {
+        console.error('Error cargando el PokéPaste:', error)
+        alert('No se pudo cargar tu PokéPaste.')
+        return
+      }
+
+      setPokepasteText(data?.pokepaste_text || '')
+      setTeamModalOpen(true)
     }
 
     window.addEventListener('upload_save_file', handleSaveUploadEvent)
@@ -798,6 +465,17 @@ function TimelineContent() {
 
   return (
     <div className="space-y-6 w-full px-2 py-4">
+      {loggedPlayer && (
+        <TeamViewerModal
+          isOpen={teamModalOpen}
+          onClose={() => setTeamModalOpen(false)}
+          jugadorNombre={loggedPlayer.name}
+          pokepasteText={pokepasteText}
+          isEditable
+          onSavePokepaste={handleSavePokepaste}
+        />
+      )}
+
       {/* Modal de Selección de Pokémon */}
       {selectedCell && canEditCell(selectedCell.jugadorId) && (
         <PokemonSelectModal
@@ -1068,7 +746,9 @@ function TimelineContent() {
                                           <span className="text-xs font-bold text-zinc-200 capitalize truncate max-w-full">{pkmn}</span>
 
                                           {reg.habilidad && (
-                                            <AbilityTooltip ability={reg.habilidad} />
+                                            <span className="text-[10px] text-sky-400 font-semibold bg-sky-950/60 border border-sky-800/40 px-2 py-0.5 rounded-md truncate max-w-[120px]">
+                                              {reg.habilidad}
+                                            </span>
                                           )}
 
                                           <div className="flex items-center justify-center gap-1 mt-0.5">
