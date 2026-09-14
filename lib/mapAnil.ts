@@ -33,6 +33,7 @@ export const MAP_ANIL_41: Record<string, string> = {
   "71": "Ruta 8",
   "72": "Ruta 7",
   "76": "Ciudad Azulona",
+  "80": "Edifico Azulona",
   "86": "Ruta 12",
   "87": "Ruta 11",
   "91": "Pueblo Marengo",
