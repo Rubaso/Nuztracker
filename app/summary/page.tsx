@@ -158,14 +158,9 @@ function TorneoContent() {
     lockedStatus = isLocked,
     size = maxParticipants
   ) => {
-    if (!canEdit) return
+    if (!canEdit) return false
 
-    setRounds(newRounds)
-    setIsLocked(lockedStatus)
-    setMaxParticipants(size)
-    setTournamentSaved(false)
-
-    await supabase.from('torneo').upsert({
+    const { error } = await supabase.from('torneo').upsert({
       id: 1,
       sala_id: SALA_ID,
       bracket_data: newRounds,
@@ -173,6 +168,19 @@ function TorneoContent() {
       max_participants: size,
       updated_at: new Date().toISOString(),
     })
+
+    if (error) {
+      console.error('Error guardando el torneo:', error)
+      setErrorMessage(`No se pudo guardar el cuadro en Supabase: ${error.message}`)
+      return false
+    }
+
+    // Solo actualizamos la interfaz después de confirmar que Supabase lo ha guardado.
+    setRounds(newRounds)
+    setIsLocked(lockedStatus)
+    setMaxParticipants(size)
+    setTournamentSaved(false)
+    return true
   }
 
   const getNextPowerOfTwo = (num: number) => {
