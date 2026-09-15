@@ -721,7 +721,7 @@ function TorneoContent() {
                       onClick={(e) => openTeamModal(j.name, e)}
                       className="text-[10px] bg-slate-800 hover:bg-sky-950 hover:text-sky-300 border border-slate-700 px-2 py-0.5 rounded"
                     >
-                      ⚔️ Equipo
+                      ⚔️ Equipo ⚔️
                     </button>
                   </div>
                 ))
@@ -780,7 +780,7 @@ function TorneoContent() {
                               onClick={(e) => openTeamModal(match.player1!, e)}
                               className="text-[11px] hover:scale-125 transition-transform"
                             >
-                              ⚔️
+                              ⚔️ Equipo ⚔️
                             </button>
                           </>
                         )}
@@ -835,7 +835,7 @@ function TorneoContent() {
                               onClick={(e) => openTeamModal(match.player2!, e)}
                               className="text-[11px] hover:scale-125 transition-transform"
                             >
-                              ⚔️
+                              ⚔️ Equipo ⚔️
                             </button>
                           </>
                         )}
