@@ -72,29 +72,31 @@ function TorneoContent() {
     setEquiposEntregados(new Set((data || []).map((d) => d.jugador_id)))
   }
 
-  // Contenido de los PokéPaste: antes de empezar, solo el del jugador conectado.
-  // Después de empezar, ya se publican todos.
-  const fetchDirectos = async () => {
-    let query = supabase.from('directos').select('jugador_id, pokepaste_text')
-
-    const todosEquipos = JUGADORES.filter((j) => jugadoresEnBracket.has(j.name))
-    const todosLosEquiposEntregadosActual = todosEquipos.length > 0 && todosEquipos.every((j) => equiposEntregados.has(j.id))
-    if (!todosLosEquiposEntregadosActual) {
-      if (!loggedPlayer?.id) {
-        setDirectosData({})
-        return
-      }
-      query = query.eq('jugador_id', loggedPlayer.id)
+  // Antes de abrir un equipo rival no descargamos todos los PokéPaste.
+  // El propio jugador se carga directamente; el rival se obtiene mediante una RPC
+  // de Supabase que solo devuelve su equipo cuando ambos han entregado.
+  const fetchOwnPokepaste = async () => {
+    if (!loggedPlayer?.id) {
+      setDirectosData({})
+      return
     }
 
-    const { data } = await query
-    if (data) {
-      const map: Record<string, string> = {}
-      data.forEach((d) => {
-        const j = JUGADORES.find((jug) => jug.id === d.jugador_id)
-        if (j && d.pokepaste_text) map[j.name] = d.pokepaste_text
-      })
-      setDirectosData(map)
+    const { data, error } = await supabase
+      .from('directos')
+      .select('jugador_id, pokepaste_text')
+      .eq('jugador_id', loggedPlayer.id)
+      .maybeSingle()
+
+    if (error) {
+      console.error('Error cargando tu PokéPaste:', error)
+      return
+    }
+
+    if (data?.pokepaste_text) {
+      const j = JUGADORES.find((jug) => jug.id === data.jugador_id)
+      if (j) {
+        setDirectosData((prev) => ({ ...prev, [j.name]: data.pokepaste_text }))
+      }
     }
   }
 
@@ -121,7 +123,7 @@ function TorneoContent() {
   useEffect(() => {
     fetchTorneo()
     fetchEquiposEntregados()
-    fetchDirectos()
+    fetchOwnPokepaste()
 
     const channel = supabase
       .channel('realtime_torneo_all')
@@ -144,7 +146,7 @@ function TorneoContent() {
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'directos' }, () => {
         fetchEquiposEntregados()
-        fetchDirectos()
+        fetchOwnPokepaste()
       })
       .subscribe()
 
@@ -456,15 +458,122 @@ function TorneoContent() {
     })
   }
 
-  const openTeamModal = (playerName: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    const j = JUGADORES.find((jug) => jug.name === playerName)
-    const text = directosData[playerName] || ''
+  const getJugadorPorNombre = (playerName: string) =>
+    JUGADORES.find((j) => j.name === playerName)
 
+  const getRivalEnMatch = (playerName: string) => {
+    let rival: string | null = null
+
+    // El jugador puede aparecer en varias rondas tras ganar.
+    // Conservamos el enfrentamiento más reciente del bracket.
+    for (const round of rounds) {
+      for (const match of round.matches) {
+        if (match.player1 === playerName && match.player2 && match.player2 !== 'BYE') {
+          rival = match.player2
+        } else if (match.player2 === playerName && match.player1 && match.player1 !== 'BYE') {
+          rival = match.player1
+        }
+      }
+    }
+
+    return rival
+  }
+
+  const canViewTeam = (playerName: string) => {
+    if (!loggedPlayer) return false
+    if (playerName === loggedPlayer.name) return true
+
+    const rivalOfLoggedPlayer = getRivalEnMatch(loggedPlayer.name)
+    if (rivalOfLoggedPlayer !== playerName) return false
+
+    const ownId = getJugadorPorNombre(loggedPlayer.name)?.id
+    const opponentId = getJugadorPorNombre(playerName)?.id
+    return Boolean(ownId && opponentId && equiposEntregados.has(ownId) && equiposEntregados.has(opponentId))
+  }
+
+  const openTeamModal = async (playerName: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+
+    if (!loggedPlayer) {
+      alert('Debes iniciar sesión para ver los equipos de los enfrentamientos.')
+      return
+    }
+
+    const j = getJugadorPorNombre(playerName)
+    if (!j?.id) return
+
+    // Tu propio equipo siempre está disponible para ti.
+    if (playerName === loggedPlayer.name) {
+      let text = directosData[playerName] || ''
+
+      if (!text) {
+        const { data, error } = await supabase
+          .from('directos')
+          .select('jugador_id, pokepaste_text')
+          .eq('jugador_id', loggedPlayer.id)
+          .maybeSingle()
+
+        if (error) {
+          alert('No se pudo cargar tu PokéPaste.')
+          return
+        }
+
+        text = data?.pokepaste_text || ''
+      }
+
+      if (!text) {
+        alert('No se ha encontrado tu PokéPaste.')
+        return
+      }
+
+      setDirectosData((prev) => ({ ...prev, [playerName]: text }))
+      setSelectedPlayerForTeam({
+        id: j.id,
+        name: playerName,
+        pokepaste_text: text,
+      })
+      setTeamModalOpen(true)
+      return
+    }
+
+    const rivalName = getRivalEnMatch(loggedPlayer.name)
+    if (rivalName !== playerName) {
+      alert('🔒 Solo puedes ver el PokéPaste de tu rival actual.')
+      return
+    }
+
+    const ownId = loggedPlayer.id
+    const opponentId = j.id
+
+    if (!equiposEntregados.has(ownId) || !equiposEntregados.has(opponentId)) {
+      alert('🔒 Ambos jugadores deben haber entregado el PokéPaste para poder verlo.')
+      return
+    }
+
+    // El rival se obtiene mediante una función SECURITY DEFINER de Supabase.
+    // Así no necesitamos hacer público el contenido de la tabla directos.
+    const { data, error } = await supabase.rpc('get_opponent_pokepaste', {
+      p_player_id: ownId,
+      p_opponent_id: opponentId,
+    })
+
+    if (error) {
+      console.error('Error cargando el PokéPaste rival:', error)
+      alert(`No se pudo cargar el PokéPaste del rival: ${error.message}`)
+      return
+    }
+
+    const rivalText = Array.isArray(data) ? data[0]?.pokepaste_text : null
+    if (!rivalText) {
+      alert('El rival todavía no tiene un PokéPaste disponible.')
+      return
+    }
+
+    setDirectosData((prev) => ({ ...prev, [playerName]: rivalText }))
     setSelectedPlayerForTeam({
-      id: j?.id,
+      id: opponentId,
       name: playerName,
-      pokepaste_text: text,
+      pokepaste_text: rivalText,
     })
     setTeamModalOpen(true)
   }
@@ -569,7 +678,7 @@ function TorneoContent() {
           onClose={() => setTeamModalOpen(false)}
           jugadorNombre={selectedPlayerForTeam.name}
           pokepasteText={selectedPlayerForTeam.pokepaste_text}
-          isEditable={!todosLosEquiposEntregados && loggedPlayer?.name === selectedPlayerForTeam.name}
+          isEditable={loggedPlayer?.name === selectedPlayerForTeam.name}
           onSavePokepaste={handleSavePokepaste}
         />
       )}
@@ -721,7 +830,7 @@ function TorneoContent() {
                       onClick={(e) => openTeamModal(j.name, e)}
                       className="text-[10px] bg-slate-800 hover:bg-sky-950 hover:text-sky-300 border border-slate-700 px-2 py-0.5 rounded"
                     >
-                      ⚔️ Equipo ⚔️
+                      ⚔️ Equipo
                     </button>
                   </div>
                 ))
@@ -778,9 +887,15 @@ function TorneoContent() {
                             </span>
                             <button
                               onClick={(e) => openTeamModal(match.player1!, e)}
-                              className="text-[11px] hover:scale-125 transition-transform"
+                              disabled={!canViewTeam(match.player1!)}
+                              className={`text-[11px] transition-transform ${
+                                canViewTeam(match.player1!) ? 'hover:scale-125' : 'opacity-40 cursor-not-allowed'
+                              }`}
+                              title={canViewTeam(match.player1!)
+                                ? 'Ver equipo'
+                                : 'Solo visible cuando ambos rivales hayan entregado el PokéPaste'}
                             >
-                              ⚔️ Equipo ⚔️
+                              ⚔️
                             </button>
                           </>
                         )}
@@ -833,9 +948,15 @@ function TorneoContent() {
                             </span>
                             <button
                               onClick={(e) => openTeamModal(match.player2!, e)}
-                              className="text-[11px] hover:scale-125 transition-transform"
+                              disabled={!canViewTeam(match.player2!)}
+                              className={`text-[11px] transition-transform ${
+                                canViewTeam(match.player2!) ? 'hover:scale-125' : 'opacity-40 cursor-not-allowed'
+                              }`}
+                              title={canViewTeam(match.player2!)
+                                ? 'Ver equipo'
+                                : 'Solo visible cuando ambos rivales hayan entregado el PokéPaste'}
                             >
-                              ⚔️ Equipo ⚔️
+                              ⚔️
                             </button>
                           </>
                         )}
