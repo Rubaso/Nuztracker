@@ -255,26 +255,12 @@ function resolveSpecialRoute(
 
   // Lapras regalo: Map102.
   // Igual que Eevee, la especie resultante puede haber sido randomizada.
-  if (obtainMap === 102 && obtainMethod === 4) {
+  if (obtainMap === 102) {
     return 'Lapras'
   }
 
   /*
    * Pikachu:
-   * La recompensa de la misión queda registrada en Ciudad Plateada
-   * (Map009). En la Partida 1.rxdata comprobamos que Borjamari, que es
-   * el Pikachu de la misión ya evolucionado a Quaxwell, conserva:
-   *   @obtain_map    = 9
-   *   @obtain_method = 0
-   *   @obtain_level  = 10
-   *   @randomized    = true
-   *
-   * Por eso la condición anterior (method = 4) nunca podía reconocerlo.
-   *
-   * Map009 también tiene Pokémon salvajes. En el save comprobado el otro
-   * Pokémon de esa zona tiene @obtain_level = 11, así que usamos el nivel
-   * de obtención 10 como dato adicional para separar la recompensa del
-   * encuentro salvaje en esta versión.
    */
   if (
     obtainMap === 9 &&
@@ -324,12 +310,20 @@ function numberValue(value: any): number | null {
 }
 
 function normalizeSpecies(value: any): string {
-  return (
-    symbolName(value) ??
-    String(value ?? '')
+  const normalized = (
+    symbolName(value) ?? 
+    String (value ?? '')
   )
     .trim()
     .toLowerCase()
+
+    const aliases: Record<string, string> = {
+    mrrmime: 'mr-mime',
+    kommoo: 'kommo-o',
+    }
+
+    return aliases[normalized] ?? normalized
+
 }
 
 function normalizeAbility(value: any): string | null {
