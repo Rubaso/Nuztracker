@@ -186,6 +186,7 @@ export default function TeamViewerModal({
   onSavePokepaste,
 }: TeamViewerModalProps) {
   const [isEditing, setIsEditing] = useState(false)
+  const [copied, setCopied] = useState(false)
   const [inputText, setInputText] = useState(pokepasteText || '')
   const [saving, setSaving] = useState(false)
   const [translations, setTranslations] = useState<Record<string, string>>({})
@@ -285,6 +286,23 @@ export default function TeamViewerModal({
   const slugify = (value: string) => value.toLowerCase().trim().replace(/[’']/g, '').replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '')
   const translate = (kind: string, value: string) => translations[`${kind}:${slugify(value)}`] || value
 
+  const handleCopyTeam = async () => {
+    const textToCopy = pokepasteText || inputText
+
+    if (!textToCopy.trim()) return
+
+    try {
+      await navigator.clipboard.writeText(textToCopy)
+
+      setCopied(true)
+
+      setTimeout(() =>
+        setCopied(false), 2000)
+    } catch (error) {
+      console.error('Error copying text to clipboard:', error)
+    }
+  }
+
   const handleSave = async () => {
     if (!onSavePokepaste) return
     setSaving(true)
@@ -304,14 +322,40 @@ export default function TeamViewerModal({
             <h2 className="text-xl font-black text-slate-100 uppercase tracking-widest flex items-center gap-2">⚔️ Equipo de {jugadorNombre}</h2>
             <p className="text-xs text-slate-400 mt-1">Torneo Nuzlocke • Lista de Combate</p>
           </div>
+
           <div className="flex items-center gap-3">
+            {team.length > 0 && (
+              <button
+                type="button"
+                onClick={handleCopyTeam}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${copied
+                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+                    : 'bg-sky-500/20 text-sky-300 border-sky-500/40 hover:bg-sky-500/30'
+                  }`}
+              >
+                {copied ? '✅ Copiado' : '📋 Copiar equipo'}
+              </button>
+            )}
+
             {isEditable && (
-              <button type="button" onClick={() => setIsEditing(!isEditing)} className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all cursor-pointer">
+              <button
+                type="button"
+                onClick={() => setIsEditing(!isEditing)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40 hover:bg-amber-500/30 transition-all cursor-pointer"
+              >
                 {isEditing ? '👁️ Ver Equipo' : '📝 Importar Pokepaste'}
               </button>
             )}
-            <button type="button" onClick={onClose} className="text-slate-400 hover:text-white text-xl font-bold cursor-pointer px-2">✕</button>
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="text-slate-400 hover:text-white text-xl font-bold cursor-pointer px-2"
+            >
+              ✕
+            </button>
           </div>
+
         </div>
 
         {isEditing ? (
