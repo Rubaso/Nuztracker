@@ -66,16 +66,17 @@ function parsePokepaste(text: string): PokemonData[] {
 
       const atIndex = firstLine.indexOf('@')
       const namePart = atIndex >= 0 ? firstLine.slice(0, atIndex).trim() : firstLine.trim()
+
       if (atIndex >= 0) item = firstLine.slice(atIndex + 1).trim()
 
-      const nicknameMatch = namePart.match(/^(.+?)\s*\(([^)]+)\)\s*(?:\(([MF])\))?$/)
+      const nicknameMatch = namePart.match(/^(.+?)\s\(([^)]+)\)\s*(?:\(([MF])\))?$/)
 
       if (nicknameMatch) {
         nickname = nicknameMatch[1].trim()
         species = nicknameMatch[2].trim()
         gender = nicknameMatch[3] ?? ''
       } else {
-        const speciesGenderMatch = namePart.match(/^(.+?)\s*\(([MF])\)$/)
+        const speciesGenderMatch = namePart.match(/^(.+?)\s\(([MF])\)$/)
         if (speciesGenderMatch) {
           species = speciesGenderMatch[1].trim()
           gender = speciesGenderMatch[2]
@@ -149,7 +150,14 @@ function parsePokepaste(text: string): PokemonData[] {
 }
 
 function getPokemonImage(species: string, shiny: boolean) {
-  const cleanName = species.toLowerCase().trim().replace(/[\'.:]/g, '').replace(/\s+/g, '-').replace(/♀/g, '-f').replace(/♂/g, '-m')
+  const cleanName = species
+    .toLowerCase()
+    .trim()
+    .replace(/['.:]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/♀/g, '-f')
+    .replace(/♂/g, '-m')
+
   const spriteName = shiny ? 'ani-shiny' : 'ani'
   return `https://play.pokemonshowdown.com/sprites/${spriteName}/${cleanName}.gif`
 }
@@ -159,11 +167,19 @@ function getEvTotal(evs: Record<string, number>) {
 }
 
 function getEvEntries(evs: Record<string, number>) {
-  return STAT_ORDER.filter(stat => evs[stat] !== undefined).map(stat => ({ stat, label: STAT_LABELS[stat], value: evs[stat] }))
+  return STAT_ORDER.filter(stat => evs[stat] !== undefined).map(stat => ({
+    stat,
+    label: STAT_LABELS[stat],
+    value: evs[stat],
+  }))
 }
 
 function getIvEntries(ivs: Record<string, number>) {
-  return STAT_ORDER.filter(stat => ivs[stat] !== undefined).map(stat => ({ stat, label: STAT_LABELS[stat], value: ivs[stat] }))
+  return STAT_ORDER.filter(stat => ivs[stat] !== undefined).map(stat => ({
+    stat,
+    label: STAT_LABELS[stat],
+    value: ivs[stat],
+  }))
 }
 
 function getLocalizedName(data: any) {
@@ -189,6 +205,7 @@ export default function TeamViewerModal({
   const [copied, setCopied] = useState(false)
   const [inputText, setInputText] = useState(pokepasteText || '')
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [translations, setTranslations] = useState<Record<string, string>>({})
   const [moveDetails, setMoveDetails] = useState<Record<string, MoveData>>({})
   const [translationsLoading, setTranslationsLoading] = useState(false)
@@ -209,7 +226,8 @@ export default function TeamViewerModal({
     let cancelled = false
     setTranslationsLoading(true)
 
-    const getSlug = (value: string) => value.toLowerCase().trim().replace(/[’']/g, '').replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '')
+    const getSlug = (value: string) =>
+      value.toLowerCase().trim().replace(/[’']/g, '').replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '')
 
     async function fetchLocalized(endpoint: string) {
       try {
@@ -283,21 +301,20 @@ export default function TeamViewerModal({
 
   if (!isOpen) return null
 
-  const slugify = (value: string) => value.toLowerCase().trim().replace(/[’']/g, '').replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '')
-  const translate = (kind: string, value: string) => translations[`${kind}:${slugify(value)}`] || value
+  const slugify = (value: string) =>
+    value.toLowerCase().trim().replace(/[’']/g, '').replace(/[^a-z0-9-]+/g, '-').replace(/^-|-$/g, '')
+
+  const translate = (kind: string, value: string) =>
+    translations[`${kind}:${slugify(value)}`] || value
 
   const handleCopyTeam = async () => {
     const textToCopy = pokepasteText || inputText
-
     if (!textToCopy.trim()) return
 
     try {
       await navigator.clipboard.writeText(textToCopy)
-
       setCopied(true)
-
-      setTimeout(() =>
-        setCopied(false), 2000)
+      setTimeout(() => setCopied(false), 2000)
     } catch (error) {
       console.error('Error copying text to clipboard:', error)
     }
@@ -305,6 +322,7 @@ export default function TeamViewerModal({
 
   const handleSave = async () => {
     if (!onSavePokepaste) return
+
     setSaving(true)
     try {
       await onSavePokepaste(inputText)
@@ -314,12 +332,36 @@ export default function TeamViewerModal({
     }
   }
 
+  const handleDeleteTeam = async () => {
+    if (!onSavePokepaste) return
+
+    const confirmed = window.confirm(
+      '¿Seguro que quieres borrar el equipo importado? Esta acción eliminará el Pokepaste guardado y podrás importar uno nuevo.'
+    )
+
+    if (!confirmed) return
+
+    setDeleting(true)
+
+    try {
+      await onSavePokepaste('')
+      setInputText('')
+      setIsEditing(true)
+    } catch (error) {
+      console.error('Error borrando el equipo:', error)
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
       <div className="bg-[#0b0f17] border border-slate-800 rounded-3xl p-6 w-full max-w-6xl shadow-2xl space-y-6 max-h-[92vh] overflow-y-auto">
         <div className="flex justify-between items-center border-b border-slate-800 pb-4">
           <div>
-            <h2 className="text-xl font-black text-slate-100 uppercase tracking-widest flex items-center gap-2">⚔️ Equipo de {jugadorNombre}</h2>
+            <h2 className="text-xl font-black text-slate-100 uppercase tracking-widest flex items-center gap-2">
+              ⚔️ Equipo de {jugadorNombre}
+            </h2>
             <p className="text-xs text-slate-400 mt-1">Torneo Nuzlocke • Lista de Combate</p>
           </div>
 
@@ -328,12 +370,24 @@ export default function TeamViewerModal({
               <button
                 type="button"
                 onClick={handleCopyTeam}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${copied
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
+                  copied
                     ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
                     : 'bg-sky-500/20 text-sky-300 border-sky-500/40 hover:bg-sky-500/30'
-                  }`}
+                }`}
               >
                 {copied ? '✅ Copiado' : '📋 Copiar equipo'}
+              </button>
+            )}
+
+            {isEditable && team.length > 0 && (
+              <button
+                type="button"
+                onClick={handleDeleteTeam}
+                disabled={deleting}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all cursor-pointer"
+              >
+                {deleting ? 'Borrando...' : '🗑️ Borrar equipo'}
               </button>
             )}
 
@@ -355,16 +409,37 @@ export default function TeamViewerModal({
               ✕
             </button>
           </div>
-
         </div>
 
         {isEditing ? (
           <div className="space-y-4">
             <div className="bg-slate-900/50 border border-slate-800 rounded-2xl p-4">
-              <p className="text-xs text-slate-400 mb-2">Pega aquí directamente el equipo exportado de Pokémon Showdown / PokéPaste.</p>
-              <textarea value={inputText} onChange={(e) => setInputText(e.target.value)} placeholder={`Likitui (Houndoom) (M) @ Terrain Extender\nAbility: Hadron Engine\nLevel: 30\nEVs: 4 HP / 252 SpA / 252 Spe\nDocile Nature\nIVs: 5 HP / 0 Atk / 12 Def / 23 SpA / 19 SpD / 24 Spe\n- Nasty Plot\n- Draining Kiss\n- Burning Jealousy\n- Super Fang`} className="w-full h-96 bg-slate-950/80 border border-slate-700 rounded-2xl p-4 text-xs font-mono text-slate-200 focus:outline-none focus:border-sky-500 resize-y" />
+              <p className="text-xs text-slate-400 mb-2">
+                Pega aquí directamente el equipo exportado de Pokémon Showdown / PokéPaste.
+              </p>
+              <textarea
+                value={inputText}
+                onChange={e => setInputText(e.target.value)}
+                placeholder={`Likitui (Houndoom) (M) @ Terrain Extender
+Ability: Hadron Engine
+Level: 30
+EVs: 4 HP / 252 SpA / 252 Spe
+Docile Nature
+IVs: 5 HP / 0 Atk / 12 Def / 23 SpA / 19 SpD / 24 Spe
+- Nasty Plot
+- Draining Kiss
+- Burning Jealousy
+- Super Fang`}
+                className="w-full h-96 bg-slate-950/80 border border-slate-700 rounded-2xl p-4 text-xs font-mono text-slate-200 focus:outline-none focus:border-sky-500 resize-y"
+              />
             </div>
-            <button type="button" onClick={handleSave} disabled={saving} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all cursor-pointer text-xs uppercase tracking-wider">
+
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={saving || deleting}
+              className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold py-3 rounded-xl transition-all cursor-pointer text-xs uppercase tracking-wider"
+            >
               {saving ? 'Guardando...' : '💾 Guardar Equipo'}
             </button>
           </div>
@@ -373,21 +448,34 @@ export default function TeamViewerModal({
             <span className="text-5xl">🔒</span>
             <div>
               <p className="text-slate-100 text-sm font-black">Equipo todavía privado</p>
-              <p className="text-slate-500 text-xs mt-1">Se publicará automáticamente cuando se pulse «🚀 Empezar Torneo».</p>
+              <p className="text-slate-500 text-xs mt-1">
+                Se publicará automáticamente cuando se pulse «🚀 Empezar Torneo».
+              </p>
             </div>
           </div>
         ) : team.length === 0 ? (
           <div className="text-center py-16 space-y-3">
             <span className="text-5xl">🎒</span>
-            <p className="text-slate-400 text-sm font-medium">Este jugador aún no ha registrado su Pokepaste para el torneo.</p>
+            <p className="text-slate-400 text-sm font-medium">
+              Este jugador aún no ha registrado su Pokepaste para el torneo.
+            </p>
+
             {isEditable && (
-              <button type="button" onClick={() => setIsEditing(true)} className="mt-3 px-4 py-2 rounded-xl text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 hover:bg-sky-500/30 transition-all cursor-pointer">📝 Importar ahora</button>
+              <button
+                type="button"
+                onClick={() => setIsEditing(true)}
+                className="mt-3 px-4 py-2 rounded-xl text-xs font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30 hover:bg-sky-500/30 transition-all cursor-pointer"
+              >
+                📝 Importar ahora
+              </button>
             )}
           </div>
         ) : (
           <div className="space-y-2">
             {translationsLoading && (
-              <div className="text-[10px] text-slate-500 text-right">Traduciendo datos al castellano…</div>
+              <div className="text-[10px] text-slate-500 text-right">
+                Traduciendo datos al castellano…
+              </div>
             )}
 
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -401,59 +489,120 @@ export default function TeamViewerModal({
                 const natureEs = pkmn.nature ? translate('nature', pkmn.nature) : ''
 
                 return (
-                  <div key={`${pkmn.nickname}-${pkmn.species}-${idx}`} className="bg-gradient-to-b from-[#111827] to-[#0d131f] border border-slate-800 hover:border-sky-500/50 rounded-2xl overflow-visible relative shadow-xl hover:shadow-sky-500/10 transition-all group">
+                  <div
+                    key={`${pkmn.nickname}-${pkmn.species}-${idx}`}
+                    className="bg-gradient-to-b from-[#111827] to-[#0d131f] border border-slate-800 hover:border-sky-500/50 rounded-2xl overflow-visible relative shadow-xl hover:shadow-sky-500/10 transition-all group"
+                  >
                     <div className="px-4 pt-4 flex items-start justify-between gap-2">
                       <div className="flex flex-col min-w-0">
                         <div className="flex items-center gap-2">
-                          <h3 className="text-base font-black text-slate-100 truncate">{pkmn.nickname || speciesEs}</h3>
-                          {pkmn.gender && <span className={`text-sm font-black ${pkmn.gender === 'M' ? 'text-sky-400' : 'text-pink-400'}`}>{pkmn.gender === 'M' ? '♂' : '♀'}</span>}
+                          <h3 className="text-base font-black text-slate-100 truncate">
+                            {pkmn.nickname || speciesEs}
+                          </h3>
+                          {pkmn.gender && (
+                            <span
+                              className={`text-sm font-black ${
+                                pkmn.gender === 'M' ? 'text-sky-400' : 'text-pink-400'
+                              }`}
+                            >
+                              {pkmn.gender === 'M' ? '♂' : '♀'}
+                            </span>
+                          )}
                           {pkmn.shiny && <span className="text-sm" title="Shiny">✨</span>}
                         </div>
-                        <span className="text-[11px] font-semibold text-slate-400 capitalize">{speciesEs}</span>
+                        <span className="text-[11px] font-semibold text-slate-400 capitalize">
+                          {speciesEs}
+                        </span>
                       </div>
-                      {pkmn.level !== null && <span className="shrink-0 text-[10px] font-black bg-slate-900 border border-slate-700 text-amber-300 px-2 py-1 rounded-lg">Nv. {pkmn.level}</span>}
+
+                      {pkmn.level !== null && (
+                        <span className="shrink-0 text-[10px] font-black bg-slate-900 border border-slate-700 text-amber-300 px-2 py-1 rounded-lg">
+                          Nv. {pkmn.level}
+                        </span>
+                      )}
                     </div>
 
                     <div className="flex justify-center relative h-40 items-center">
-                      {pkmn.teraType && <span className="absolute top-2 right-3 text-[9px] font-black uppercase px-2 py-1 rounded-md bg-purple-950/80 text-purple-300 border border-purple-800/60 z-10">💎 {pkmn.teraType}</span>}
-                      <img src={getPokemonImage(pkmn.species, pkmn.shiny)} alt={speciesEs} className="w-36 h-36 object-contain drop-shadow-[0_10px_14px_rgba(0,0,0,0.7)] group-hover:scale-110 transition-transform" onError={(e) => { e.currentTarget.src = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png' }} />
+                      {pkmn.teraType && (
+                        <span className="absolute top-2 right-3 text-[9px] font-black uppercase px-2 py-1 rounded-md bg-purple-950/80 text-purple-300 border border-purple-800/60 z-10">
+                          💎 {pkmn.teraType}
+                        </span>
+                      )}
+
+                      <img
+                        src={getPokemonImage(pkmn.species, pkmn.shiny)}
+                        alt={speciesEs}
+                        className="w-36 h-36 object-contain drop-shadow-[0_10px_14px_rgba(0,0,0,0.7)] group-hover:scale-110 transition-transform"
+                        onError={e => {
+                          e.currentTarget.src =
+                            'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/items/poke-ball.png'
+                        }}
+                      />
                     </div>
 
                     <div className="px-4 pb-4 space-y-3">
                       <div className="grid grid-cols-2 gap-2">
                         <div className="bg-slate-900/70 border border-slate-800 p-2.5 rounded-xl">
-                          <span className="block text-[8px] uppercase text-slate-500 font-black tracking-wider">Objeto</span>
-                          <span className="block text-[10px] text-slate-200 font-bold truncate mt-1">{itemEs}</span>
+                          <span className="block text-[8px] uppercase text-slate-500 font-black tracking-wider">
+                            Objeto
+                          </span>
+                          <span className="block text-[10px] text-slate-200 font-bold truncate mt-1">
+                            {itemEs}
+                          </span>
                         </div>
+
                         <div className="bg-slate-900/70 border border-slate-800 p-2.5 rounded-xl">
-                          <span className="block text-[8px] uppercase text-slate-500 font-black tracking-wider">Habilidad</span>
-                          <span className="block text-[10px] text-sky-400 font-bold truncate mt-1">{abilityEs}</span>
+                          <span className="block text-[8px] uppercase text-slate-500 font-black tracking-wider">
+                            Habilidad
+                          </span>
+                          <span className="block text-[10px] text-sky-400 font-bold truncate mt-1">
+                            {abilityEs}
+                          </span>
                         </div>
                       </div>
 
                       {pkmn.nature && (
                         <div className="flex items-center justify-between bg-slate-900/50 border border-slate-800 px-3 py-2 rounded-xl">
-                          <span className="text-[9px] uppercase text-slate-500 font-black">Naturaleza</span>
-                          <span className="text-[10px] text-amber-400 font-black">{natureEs}</span>
+                          <span className="text-[9px] uppercase text-slate-500 font-black">
+                            Naturaleza
+                          </span>
+                          <span className="text-[10px] text-amber-400 font-black">
+                            {natureEs}
+                          </span>
                         </div>
                       )}
 
                       {pkmn.moves.length > 0 && (
                         <div>
                           <div className="flex items-center justify-between mb-1.5">
-                            <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider">Movimientos</span>
-                            <span className="text-[8px] text-slate-600">{pkmn.moves.length}/4</span>
+                            <span className="text-[9px] font-black uppercase text-slate-500 tracking-wider">
+                              Movimientos
+                            </span>
+                            <span className="text-[8px] text-slate-600">
+                              {pkmn.moves.length}/4
+                            </span>
                           </div>
+
                           <div className="grid grid-cols-2 gap-1.5">
                             {pkmn.moves.slice(0, 4).map((move, moveIndex) => {
                               const details = moveDetails[slugify(move)]
                               const translatedMove = details?.name ?? move
 
                               return (
-                                <div key={`${move}-${moveIndex}`} title={details?.description || move} className="bg-slate-900/80 border border-slate-800 px-2.5 py-2 rounded-lg text-[10px] font-bold text-slate-200 truncate hover:border-sky-800 transition-colors cursor-help">
+                                <div
+                                  key={`${move}-${moveIndex}`}
+                                  title={details?.description || move}
+                                  className="bg-slate-900/80 border border-slate-800 px-2.5 py-2 rounded-lg text-[10px] font-bold text-slate-200 truncate hover:border-sky-800 transition-colors cursor-help"
+                                >
                                   {translatedMove}
                                   {details && (
-                                    <span className="sr-only"> {details.type} {details.power !== null ? `Potencia ${details.power}` : ''} {details.accuracy !== null ? `Precisión ${details.accuracy}` : ''} {details.pp !== null ? `PP ${details.pp}` : ''}</span>
+                                    <span className="sr-only">
+                                      {' '}
+                                      {details.type}{' '}
+                                      {details.power !== null ? `Potencia ${details.power}` : ''}{' '}
+                                      {details.accuracy !== null ? `Precisión ${details.accuracy}` : ''}{' '}
+                                      {details.pp !== null ? `PP ${details.pp}` : ''}
+                                    </span>
                                   )}
                                 </div>
                               )
@@ -465,14 +614,30 @@ export default function TeamViewerModal({
                       {evEntries.length > 0 && (
                         <div className="border-t border-slate-800/80 pt-3">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[9px] font-black uppercase text-emerald-400 tracking-wider">EVs</span>
-                            <span className={`text-[8px] font-bold ${totalEvs > 510 ? 'text-rose-400' : 'text-slate-500'}`}>{totalEvs}/510</span>
+                            <span className="text-[9px] font-black uppercase text-emerald-400 tracking-wider">
+                              EVs
+                            </span>
+                            <span
+                              className={`text-[8px] font-bold ${
+                                totalEvs > 510 ? 'text-rose-400' : 'text-slate-500'
+                              }`}
+                            >
+                              {totalEvs}/510
+                            </span>
                           </div>
+
                           <div className="grid grid-cols-3 gap-1.5">
                             {evEntries.map(entry => (
-                              <div key={entry.stat} className="bg-emerald-950/20 border border-emerald-900/30 rounded-lg px-2 py-1.5 text-center">
-                                <span className="block text-[8px] text-slate-500 font-black">{entry.label}</span>
-                                <span className="block text-[10px] text-emerald-300 font-black">{entry.value}</span>
+                              <div
+                                key={entry.stat}
+                                className="bg-emerald-950/20 border border-emerald-900/30 rounded-lg px-2 py-1.5 text-center"
+                              >
+                                <span className="block text-[8px] text-slate-500 font-black">
+                                  {entry.label}
+                                </span>
+                                <span className="block text-[10px] text-emerald-300 font-black">
+                                  {entry.value}
+                                </span>
                               </div>
                             ))}
                           </div>
@@ -481,12 +646,30 @@ export default function TeamViewerModal({
 
                       {ivEntries.length > 0 && (
                         <div className="border-t border-slate-800/80 pt-3">
-                          <span className="text-[9px] font-black uppercase text-sky-400 tracking-wider block mb-2">IVs</span>
+                          <span className="text-[9px] font-black uppercase text-sky-400 tracking-wider block mb-2">
+                            IVs
+                          </span>
+
                           <div className="grid grid-cols-3 gap-1.5">
                             {ivEntries.map(entry => (
-                              <div key={entry.stat} className="bg-sky-950/20 border border-sky-900/30 rounded-lg px-2 py-1.5 text-center">
-                                <span className="block text-[8px] text-slate-500 font-black">{entry.label}</span>
-                                <span className={`block text-[10px] font-black ${entry.value === 0 ? 'text-rose-400' : entry.value === 31 ? 'text-emerald-400' : 'text-slate-300'}`}>{entry.value}</span>
+                              <div
+                                key={entry.stat}
+                                className="bg-sky-950/20 border border-sky-900/30 rounded-lg px-2 py-1.5 text-center"
+                              >
+                                <span className="block text-[8px] text-slate-500 font-black">
+                                  {entry.label}
+                                </span>
+                                <span
+                                  className={`block text-[10px] font-black ${
+                                    entry.value === 0
+                                      ? 'text-rose-400'
+                                      : entry.value === 31
+                                        ? 'text-emerald-400'
+                                        : 'text-slate-300'
+                                  }`}
+                                >
+                                  {entry.value}
+                                </span>
                               </div>
                             ))}
                           </div>
