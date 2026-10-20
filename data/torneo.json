@@ -1,0 +1,69 @@
+[
+  {
+    "id": 1,
+    "sala_id": "anil-locke-2026",
+    "bracket_data": [
+      {
+        "name": "Cuartos de Final",
+        "matches": [
+          {
+            "id": "r0-m0",
+            "winner": "Rubaso 🫃​​",
+            "player1": "Rubaso 🫃​​",
+            "player2": "Ferrox ☠️"
+          },
+          {
+            "id": "r0-m1",
+            "winner": "Zigurath 🎯",
+            "player1": "Tencachy 👍",
+            "player2": "Zigurath 🎯"
+          },
+          {
+            "id": "r0-m2",
+            "winner": "Solcius ❗",
+            "player1": "GoblinPeke 👺",
+            "player2": "Solcius ❗"
+          },
+          {
+            "id": "r0-m3",
+            "winner": "Ruina 😈",
+            "player1": "Lordzacas 🏎️",
+            "player2": "Ruina 😈"
+          }
+        ]
+      },
+      {
+        "name": "Semifinales",
+        "matches": [
+          {
+            "id": "r1-m0",
+            "winner": "Zigurath 🎯",
+            "player1": "Rubaso 🫃​​",
+            "player2": "Zigurath 🎯"
+          },
+          {
+            "id": "r1-m1",
+            "winner": "Solcius ❗",
+            "player1": "Solcius ❗",
+            "player2": "Ruina 😈"
+          }
+        ]
+      },
+      {
+        "name": "Gran Final",
+        "matches": [
+          {
+            "id": "r2-m0",
+            "winner": "Solcius ❗",
+            "player1": "Zigurath 🎯",
+            "player2": "Solcius ❗"
+          }
+        ]
+      }
+    ],
+    "updated_at": "2026-10-20 21:43:10.668+00",
+    "pokepastes_public": false,
+    "is_locked": true,
+    "max_participants": 8
+  }
+]

@@ -1,0 +1,324 @@
+[
+  {
+    "id": 1,
+    "sala_id": "anil-locke-2026",
+    "nombre": "Torneo #1",
+    "fecha": "2026-09-18 23:33:39.494+00",
+    "campeon": "Ruina 😈",
+    "max_participants": 10,
+    "bracket_data": [
+      {
+        "name": "Octavos de Final",
+        "matches": [
+          {
+            "id": "r0-m0",
+            "winner": "Ferrox ☠️",
+            "player1": "Ferrox ☠️",
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m1",
+            "winner": "Lordzacas 🏎️",
+            "player1": "Lordzacas 🏎️",
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m2",
+            "winner": "Solcius ❗",
+            "player1": "Solcius ❗",
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m3",
+            "winner": "Tencachy 👍",
+            "player1": "Tencachy 👍",
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m4",
+            "winner": "Rubaso 🫃​​",
+            "player1": "Rubaso 🫃​​",
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m5",
+            "winner": "GoblinPeke 👺",
+            "player1": "GoblinPeke 👺",
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m6",
+            "winner": "Ruina 😈",
+            "player1": "Zigurath 🎯",
+            "player2": "Ruina 😈"
+          },
+          {
+            "id": "r0-m7",
+            "winner": "Daavvo ",
+            "player1": "Daavvo ",
+            "player2": "Zonenzonao 🤪​"
+          }
+        ]
+      },
+      {
+        "name": "Cuartos de Final",
+        "matches": [
+          {
+            "id": "r1-m0",
+            "winner": "Ferrox ☠️",
+            "player1": "Ferrox ☠️",
+            "player2": "Lordzacas 🏎️"
+          },
+          {
+            "id": "r1-m1",
+            "winner": "Tencachy 👍",
+            "player1": "Solcius ❗",
+            "player2": "Tencachy 👍"
+          },
+          {
+            "id": "r1-m2",
+            "winner": "Rubaso 🫃​​",
+            "player1": "Rubaso 🫃​​",
+            "player2": "GoblinPeke 👺"
+          },
+          {
+            "id": "r1-m3",
+            "winner": "Ruina 😈",
+            "player1": "Ruina 😈",
+            "player2": "Daavvo "
+          }
+        ]
+      },
+      {
+        "name": "Semifinales",
+        "matches": [
+          {
+            "id": "r2-m0",
+            "winner": "Ferrox ☠️",
+            "player1": "Ferrox ☠️",
+            "player2": "Tencachy 👍"
+          },
+          {
+            "id": "r2-m1",
+            "winner": "Ruina 😈",
+            "player1": "Rubaso 🫃​​",
+            "player2": "Ruina 😈"
+          }
+        ]
+      },
+      {
+        "name": "Gran Final",
+        "matches": [
+          {
+            "id": "r3-m0",
+            "winner": "Ruina 😈",
+            "player1": "Ferrox ☠️",
+            "player2": "Ruina 😈"
+          }
+        ]
+      }
+    ],
+    "equipos": {
+      "Rubaso 🫃​​": "Likitui (Houndoom) (M) @ Terrain Extender  \nAbility: Hadron Engine  \nLevel: 30  \nHappiness: 202  \nDocile Nature  \nIVs: 5 HP / 4 Atk / 12 Def / 23 SpA / 19 SpD / 24 Spe  \n- Nasty Plot  \n- Draining Kiss  \n- Burning Jealousy  \n- Super Fang  \n\nMarisol (Tsareena) (F) @ Expert Belt  \nAbility: Intrepid Sword  \nLevel: 30  \nHappiness: 229  \nSerious Nature  \nIVs: 28 HP / 19 Atk / 20 Def / 16 SpA / 6 SpD / 9 Spe  \n- Flower Trick  \n- Aqua Jet  \n- Coil  \n- Taunt  \n\nAwacate (Mienfoo) (F) @ Wide Lens  \nAbility: Hustle  \nLevel: 30  \nHappiness: 85  \nSerious Nature  \nIVs: 21 HP / 13 Atk / 18 Def / 1 SpA / 24 Spe  \n- Jet Punch  \n- Light Screen  \n- Coaching  \n- Aerial Ace  \n\nAmparo (Ampharos) (F) @ Leftovers  \nAbility: Sand Spit  \nLevel: 30  \nDocile Nature  \nIVs: 20 HP / 20 Atk / 26 Def / 16 SpA / 9 SpD / 11 Spe  \n- Electroweb  \n- Shell Smash  \n- Pain Split  \n- Obstruct  \n\nMariquita (Orbeetle) (M) @ Heavy-Duty Boots  \nAbility: Battery  \nLevel: 30  \nHappiness: 67  \nQuirky Nature  \nIVs: 27 HP / 27 Atk / 27 Def / 11 SpA / 20 SpD / 29 Spe  \n- Morning Sun  \n- Thunder Wave  \n- Acid  \n- Court Change  \n\nAlmondiga (Toxtricity) (F) @ Poison Barb  \nAbility: Wind Power  \nLevel: 30  \nHappiness: 183  \nDocile Nature  \nIVs: 10 HP / 19 Atk / 3 Def / 14 SpA / 6 SpD / 28 Spe  \n- Sludge  \n- Milk Drink  \n- Flame Burst  \n- Vacuum Wave  \n\n"
+    },
+    "created_at": "2026-09-18 23:33:39.043069+00",
+    "torneo_hash": "de3d4b8d50be9adbdac67274566e885e79a47485944a7d3300621eb40d98f6f5"
+  },
+  {
+    "id": 2,
+    "sala_id": "anil-locke-2026",
+    "nombre": "Torneo #2",
+    "fecha": "2026-09-30 01:36:58.028+00",
+    "campeon": "Zigurath 🎯",
+    "max_participants": 9,
+    "bracket_data": [
+      {
+        "name": "Octavos de Final",
+        "matches": [
+          {
+            "id": "r0-m0",
+            "winner": "Lordzacas 🏎️",
+            "player1": null,
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m1",
+            "winner": "Zigurath 🎯",
+            "player1": null,
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m2",
+            "winner": "Solcius ❗",
+            "player1": null,
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m3",
+            "winner": "Zonenzonao 🤪​",
+            "player1": null,
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m4",
+            "winner": "Ferrox ☠️",
+            "player1": null,
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m5",
+            "winner": "Rubaso 🫃​​",
+            "player1": null,
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m6",
+            "winner": "Tencachy 👍",
+            "player1": null,
+            "player2": "BYE"
+          },
+          {
+            "id": "r0-m7",
+            "winner": null,
+            "player1": null,
+            "player2": null
+          }
+        ]
+      },
+      {
+        "name": "Cuartos de Final",
+        "matches": [
+          {
+            "id": "r1-m0",
+            "winner": "Ruina 😈",
+            "player1": "Rubaso 🫃​​",
+            "player2": "Ruina 😈"
+          },
+          {
+            "id": "r1-m1",
+            "winner": "GoblinPeke 👺",
+            "player1": "Ferrox ☠️",
+            "player2": "GoblinPeke 👺"
+          },
+          {
+            "id": "r1-m2",
+            "winner": "Tencachy 👍",
+            "player1": "Lordzacas 🏎️",
+            "player2": "Tencachy 👍"
+          },
+          {
+            "id": "r1-m3",
+            "winner": "Zigurath 🎯",
+            "player1": "Zigurath 🎯",
+            "player2": "Solcius ❗"
+          }
+        ]
+      },
+      {
+        "name": "Semifinales",
+        "matches": [
+          {
+            "id": "r2-m0",
+            "winner": "GoblinPeke 👺",
+            "player1": "Ruina 😈",
+            "player2": "GoblinPeke 👺"
+          },
+          {
+            "id": "r2-m1",
+            "winner": "Zigurath 🎯",
+            "player1": "Tencachy 👍",
+            "player2": "Zigurath 🎯"
+          }
+        ]
+      },
+      {
+        "name": "Gran Final",
+        "matches": [
+          {
+            "id": "r3-m0",
+            "winner": "Zigurath 🎯",
+            "player1": "GoblinPeke 👺",
+            "player2": "Zigurath 🎯"
+          }
+        ]
+      }
+    ],
+    "equipos": {
+      "Rubaso 🫃​​": "Semen (Milotic) (M) @ Expert Belt  \nAbility: Magic Bounce  \nCalm Nature  \nLevel: 54  \n- Torch Song  \n- Buzzy Buzz  \n- Psystrike  \n- Silk Trap  \n\nSetoncio (Amoonguss) (F) @ Black Sludge  \nAbility: Psychic Surge  \nQuiet Nature   \nLevel: 54  \n- Octolock  \n- Spiky Shield  \n- Toxic  \n- Giga Drain  \n\nRammus (Aggron) (F) @ Heavy-Duty Boots  \nAbility: Regenerator  \nModest Nature  \n- Heavy Slam  \n- Heal Order  \n- Flower Trick  \n- Shift Gear  \n\nPiñón (Forretress) (M) @ Assault Vest  \nAbility: Prankster  \nLevel: 54  \n- Spore  \n- Heal Order  \n- Stealth Rock  \n- Circle Throw  \n\nDagomon (Samurott) (M) @ Life Orb  \nAbility: Download  \nLevel: 54  \n- Spiky Shield  \n- Shell Smash  \n- Buzzy Buzz  \n- Grass Knot  \n\nPokebabi (Florges) (F) @ Leftovers  \nAbility: Super Luck  \nLevel: 54  \n- Glaciate  \n- Sparkly Swirl  \n- Burning Bulwark  \n- Leech Seed  \n\n"
+    },
+    "created_at": "2026-09-30 01:36:57.556112+00",
+    "torneo_hash": "6949382afe2b74d29852faffc495692f1fd12cee67756aa3f909d9e15f5e4bd1"
+  },
+  {
+    "id": 3,
+    "sala_id": "anil-locke-2026",
+    "nombre": "Torneo #3",
+    "fecha": "2026-10-20 21:43:13.719+00",
+    "campeon": "Solcius ❗",
+    "max_participants": 8,
+    "bracket_data": [
+      {
+        "name": "Cuartos de Final",
+        "matches": [
+          {
+            "id": "r0-m0",
+            "winner": "Rubaso 🫃​​",
+            "player1": "Rubaso 🫃​​",
+            "player2": "Ferrox ☠️"
+          },
+          {
+            "id": "r0-m1",
+            "winner": "Zigurath 🎯",
+            "player1": "Tencachy 👍",
+            "player2": "Zigurath 🎯"
+          },
+          {
+            "id": "r0-m2",
+            "winner": "Solcius ❗",
+            "player1": "GoblinPeke 👺",
+            "player2": "Solcius ❗"
+          },
+          {
+            "id": "r0-m3",
+            "winner": "Ruina 😈",
+            "player1": "Lordzacas 🏎️",
+            "player2": "Ruina 😈"
+          }
+        ]
+      },
+      {
+        "name": "Semifinales",
+        "matches": [
+          {
+            "id": "r1-m0",
+            "winner": "Zigurath 🎯",
+            "player1": "Rubaso 🫃​​",
+            "player2": "Zigurath 🎯"
+          },
+          {
+            "id": "r1-m1",
+            "winner": "Solcius ❗",
+            "player1": "Solcius ❗",
+            "player2": "Ruina 😈"
+          }
+        ]
+      },
+      {
+        "name": "Gran Final",
+        "matches": [
+          {
+            "id": "r2-m0",
+            "winner": "Solcius ❗",
+            "player1": "Zigurath 🎯",
+            "player2": "Solcius ❗"
+          }
+        ]
+      }
+    ],
+    "equipos": {
+      "Rubaso 🫃​​": "Kachay (Tapu Koko) @ Focus Sash  \nAbility: Levitate  \nLevel: 50  \n- Zen Headbutt  \n- Collision Course  \n- Fake Out  \n- Burning Bulwark  \n\nSemen (Milotic) (M) @ Leftovers  \nAbility: Regenerator  \nLevel: 50  \nHappiness: 112  \n- Sparkling Aria  \n- Struggle Bug  \n- Follow Me  \n- Silk Trap  \n\nPiñón (Forretress) (M) @ Rocky Helmet  \nAbility: Prankster  \nLevel: 50  \nHappiness: 224  \n- Spore  \n- Burning Bulwark  \n- Icy Wind  \n- Thousand Waves  \n\nCoirana (Chandelure) (M) @ Life Orb  \nAbility: Intimidate  \nIVs: 18 Atk  \nLevel: 50  \nHappiness: 238  \n- Spacial Rend  \n- Heat Wave  \n- Shadow Ball  \n- Icy Wind  \n\nRubi (Skeledirge) (M) @ Assault Vest  \nAbility: Unaware  \nLevel: 50  \nHappiness: 121  \n- Volt Switch  \n- Baddy Bad  \n- Mystical Fire  \n- Shadow Ball  \n\nMarico (Hippowdon) (F) @ Lum Berry  \nAbility: Stamina  \nHappiness: 88  \n- Liquidation  \n- Thousand Arrows  \n- Spiky Shield  \n- Coil  \n\n"
+    },
+    "created_at": "2026-10-20 21:43:13.237019+00",
+    "torneo_hash": "82f969f9ef93f55abfc4f4d6baf78c0fbf26519c8522720999efbd9f94fff7d9"
+  }
+]
